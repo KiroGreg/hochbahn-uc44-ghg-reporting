@@ -1,0 +1,940 @@
+/* Global theme — Hamburger Hochbahn Corporate Design */
+@use '@angular/material' as mat;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Angular Material — schlankes M3-Theme (nur für die mat-table im Warengruppen-Katalog).
+   Setzt nur CSS-Custom-Properties auf :root; restyled keine Nicht-Material-Elemente. */
+html {
+  @include mat.theme(
+    (
+      color: (
+        theme-type: light,
+        primary: mat.$azure-palette,
+      ),
+      typography: Inter,
+      density: 0,
+    )
+  );
+}
+
+:root {
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --sw: 220px;
+  --th: 46px;
+  --tr: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  /* Hochbahn Brand */
+  --hb-rot: #E2011F;
+  --hb-aubergine: #470F34;
+  --hb-leuchtblau: #0D9AF2;
+}
+
+[data-theme='light'] {
+  --bg: #f0f2f5;
+  --bg-side: #470F34;   /* Hochbahn Aubergine */
+  --bg-top: #ffffff;
+  --bg-card: #ffffff;
+  --bg-alt: #f7f8fa;
+  --bg-hov: #eef0f4;
+  --bg-inp: #ffffff;
+  --bg-info: #dff0fb;
+  --bg-warn: #fffbeb;
+  --bg-succ: #f0fdf4;
+  --bg-dang: #fde8eb;
+  --bd: #e2e5eb;
+  --bd-l: #edf0f4;
+  --bd-i: #7dd3fc;
+  --bd-w: #fde68a;
+  --t1: #0f172a;
+  --t2: #64748b;
+  --t3: #94a3b8;
+  --ti: #0069b4;        /* Darker Leuchtblau — WCAG AA on white (5.5:1) */
+  --tw: #92400e;
+  --ts: #166534;
+  --td: #991b1b;
+  --blue: #0069b4;      /* Text/interactive Leuchtblau — WCAG AA */
+  --blue-l: #dff0fb;
+  --green: #0d9488;
+  --green-l: #f0fdf4;
+  --amber: #d97706;
+  --amber-l: #fffbeb;
+  --red: #E2011F;       /* Hochbahn Rot — primary actions */
+  --red-l: #fde8eb;
+  --chart-hist: #470F34; /* Histogramm-Balken: Aubergine (Brand-Primärfarbe) */
+  --sh: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --sh2: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] {
+  --bg: #0d1117;
+  --bg-side: #2a0d1e;   /* Dark Aubergine */
+  --bg-top: #161c26;
+  --bg-card: #1c2333;
+  --bg-alt: #212a3a;
+  --bg-hov: #263044;
+  --bg-inp: #1c2333;
+  --bg-info: #1e3a5f;
+  --bg-warn: #2d1f0a;
+  --bg-succ: #0a2a1f;
+  --bg-dang: #2a1515;
+  --bd: #2a3347;
+  --bd-l: #232c3d;
+  --bd-i: #1d4ed8;
+  --bd-w: #78350f;
+  --t1: #e2e8f4;
+  --t2: #8892a6;
+  --t3: #4a5568;
+  --ti: #4fb3f7;
+  --tw: #fbbf24;
+  --ts: #34d399;
+  --td: #f87171;
+  --blue: #4fb3f7;
+  --blue-l: #1e3a5f;
+  --green: #14b8a6;
+  --green-l: #0a2a1f;
+  --amber: #f59e0b;
+  --amber-l: #2d1f0a;
+  --red: #ff3d55;       /* Brighter red for dark mode visibility */
+  --red-l: #2a1515;
+  --chart-hist: #c76aa0; /* Histogramm-Balken: hellere Aubergine-Abstufung (im Dark Mode sichtbar) */
+  --sh: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+  --sh2: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  height: 100%;
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--t1);
+  transition: var(--tr);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+.b-bl { background: var(--blue-l); color: var(--blue); }
+.b-gr { background: var(--green-l); color: var(--green); }
+.b-am { background: var(--amber-l); color: var(--amber); }
+.b-rd { background: var(--red-l); color: var(--red); }
+
+.chip {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.c-gr { background: var(--green-l); color: var(--green); }
+.c-bl { background: var(--blue-l); color: var(--blue); }
+.c-lb { background: rgba(13,154,242,0.12); color: #0D9AF2; }
+.c-am { background: var(--amber-l); color: var(--amber); }
+.c-rd { background: var(--red-l); color: var(--red); }
+.c-mu { background: var(--bg-alt); color: var(--t2); border: 1px solid var(--bd); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  background: var(--bg-inp);
+  color: var(--t1);
+  transition: var(--tr);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.btn:hover { background: var(--bg-hov); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Keyboard-only focus indicator — subtle blue, doesn't fire on mouse click */
+.btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.bp { background: var(--red); color: #fff; border-color: var(--red); } /* Hochbahn Rot */
+/* Explicitly keep red background on hover so .btn:hover doesn't overwrite it */
+.bp:hover { background: var(--red); filter: brightness(1.1); }
+.bp:focus-visible { outline: 2px solid rgba(226,1,31,0.5); outline-offset: 3px; }
+.bsm { padding: 4px 9px; font-size: 10px; }
+
+/* Auto-Übernahme in der Toolbar — Button rot umrandet, fällt auf ohne Vollton-Wucht */
+.auto-accept {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.aa-btn {
+  border: 1.5px solid var(--red);
+  color: var(--red);
+  background: var(--bg-inp);
+  font-weight: 700;
+}
+.aa-btn:hover:not(:disabled) { background: var(--red-l); }
+.aa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Alle Steuerelemente der KI-Prüfungs-Toolbar gleich hoch (Breiten dürfen variieren):
+   Selects, Betragsfeld und Buttons (inkl. „↺ Zurücksetzen") teilen sich eine Höhe.
+   Scoped auf view-review, damit z. B. die Dashboard-Toolbar unberührt bleibt. */
+view-review .tbar .btn,
+view-review .tbar .sel-trigger,
+view-review .tbar .amount-input {
+  height: 32px;
+  box-sizing: border-box;
+}
+
+/* Betrags-Eingabe der Auto-Übernahme: gleiche Höhe wie die Selects daneben,
+   größere Schrift und sichtbar größere Spinner-Pfeile; Schrittweite 100 (im HTML). */
+.amount-input {
+  width: 96px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 400;
+  padding: 4px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  background-color: var(--bg-inp);
+  color: var(--t1);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.amount-input:hover { border-color: var(--blue); }
+.amount-input:focus { border-color: var(--blue); }
+/* Spinner-Pfeile dauerhaft sichtbar und breiter → besser klickbar (WebKit/Chromium). */
+.amount-input::-webkit-inner-spin-button,
+.amount-input::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  width: 17px;
+  align-self: stretch;
+  cursor: pointer;
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.a-i { background: var(--bg-info); border: 1px solid var(--bd-i); color: var(--ti); }
+.a-w { background: var(--bg-warn); border: 1px solid var(--bd-w); color: var(--tw); }
+.a-ico { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.alert strong { font-weight: 700; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  box-shadow: var(--sh);
+  transition: var(--tr);
+  overflow: hidden;
+}
+.card-h {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--bd);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-alt);
+  letter-spacing: 0.01em;
+}
+.card-b { padding: 13px 14px; }
+
+.kg {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.kc {
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 13px 14px;
+  box-shadow: var(--sh);
+  transition: var(--tr);
+}
+.kl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+.kv {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.ks { font-size: 11px; color: var(--t2); }
+.kc.kbl .kv { color: var(--blue); }
+.kc.kgr .kv { color: var(--green); }
+.kc.kam .kv { color: var(--amber); }
+.kc.krd .kv { color: var(--red); }
+
+.tw {
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--sh);
+}
+/* Detailtabelle: Box zeigt ~10 Zeilen, der Rest wird innerhalb gescrollt.
+   Der Header bleibt beim Scrollen sichtbar (sticky). */
+.tw-scroll {
+  max-height: 372px;
+  overflow-y: auto;
+}
+.tw-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-alt);
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--bg-alt); }
+th {
+  padding: 8px 11px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--bd);
+  white-space: nowrap;
+}
+td {
+  padding: 7px 11px;
+  border-bottom: 1px solid var(--bd-l);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--t1);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg-hov); }
+
+/* Entschiedene Zeilen (KI-Prüfung) gedimmt. Wichtig: die Opacity liegt auf den
+   einzelnen Zellen, NICHT auf der <tr> — sonst würde der opacity-Teilbaum auch das
+   position:fixed-Popup des WG-Comboboxes mitdimmen (das DOM-technisch in der Zelle
+   liegt). Die WG-Zelle bleibt deckend; nur ihr Trigger wird gedimmt, das Popup nicht. */
+tr.row-dim > td { opacity: 0.6; }
+tr.row-dim > td.wg-cell { opacity: 1; }
+tr.row-dim .wg-combo-trigger { opacity: 0.6; }
+
+/* Native Selects bekommen denselben Look wie der WG-Combobox-Trigger:
+   gleicher Rahmen/Radius/Hintergrund, Hover-Highlight und ein eigener ▾-Caret
+   (appearance:none + SVG-Chevron statt nativem Pfeil). */
+select {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 24px 4px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  background-color: var(--bg-inp);
+  color: var(--t1);
+  cursor: pointer;
+  outline: none;
+  transition: var(--tr);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' fill='none' stroke='%2394a3b8' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px;
+}
+select:hover { border-color: var(--blue); }
+select:focus { border-color: var(--blue); outline: none; }
+/* Caret im Dark-Theme dunkler (entspricht --t3 dunkel) */
+[data-theme='dark'] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' fill='none' stroke='%234a5568' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.abtn {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  font-family: var(--font);
+  transition: background 0.12s;
+  border: 1px solid transparent;
+}
+.a-ok { border-color: var(--green); color: var(--green); }
+.a-ok:hover { background: var(--green-l); }
+.a-no { border-color: var(--red); color: var(--red); }
+.a-no:hover { background: var(--red-l); }
+/* Aktiver (getroffener) Zustand: gefüllt — erneuter Klick macht die Entscheidung rückgängig. */
+.a-ok.aa { background: var(--green); color: #fff; }
+.a-no.aa { background: var(--red); color: #fff; }
+.a-fl { border-color: var(--blue); color: var(--blue); }
+.a-fl:hover { background: var(--blue-l); }
+.a-wg { border-color: var(--amber); color: var(--amber); }
+.a-wg:hover { background: var(--amber-l); }
+
+.ptrk { height: 4px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+.pfil { height: 100%; border-radius: 2px; transition: width 0.06s linear; }
+
+.dbar {
+  display: flex;
+  height: 20px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+/* Horizontales Balkendiagramm (Dashboard, req 4.2) */
+.bc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.bc-row:last-child { margin-bottom: 0; }
+.bc-label {
+  width: 34%;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bc-track {
+  flex: 1;
+  height: 16px;
+  background: var(--bg-alt);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bc-bar {
+  height: 100%;
+  background: var(--hb-leuchtblau); /* Hochbahn Leuchtblau für das Balkendiagramm (req 4.2) */
+  border-radius: 4px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+.bc-val {
+  width: 72px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+}
+/* Histogramm (req 4.4): horizontale Balken in Aubergine + Rate- und Anzahl-Spalte */
+.bc-bar.bc-hist { background: var(--chart-hist); }
+.hist-rate {
+  width: 74px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t1);
+  font-variant-numeric: tabular-nums;
+}
+.hist-n {
+  width: 44px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+}
+/* Platzhalter Sankey (req 4.1) */
+.sankey-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 440px;
+  border: 1px dashed var(--bd);
+  border-radius: 8px;
+  color: var(--t2);
+  gap: 8px;
+}
+.sankey-ico { font-size: 30px; opacity: 0.45; }
+.sankey-ttl { font-weight: 700; color: var(--t1); }
+.sankey-soon .tsm { max-width: 320px; }
+
+.tbtns { display: flex; gap: 4px; }
+.tbtn {
+  padding: 5px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-inp);
+  color: var(--t2);
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.tbtn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.tbtn.ta { background: var(--red); color: #fff; border-color: var(--red); } /* Hochbahn Rot */
+.tbtn.ta:hover { background: var(--red); filter: brightness(1.1); }
+
+.tbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.g2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mb14 { margin-bottom: 14px; }
+.mb12 { margin-bottom: 12px; }
+.fr { display: flex; align-items: center; gap: 8px; }
+.fbt { justify-content: space-between; }
+.f1 { flex: 1; }
+.t2 { color: var(--t2); }
+.tsm { font-size: 11px; }
+.mono { font-family: var(--mono); font-size: 10px; }
+
+.dz-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--th) - 32px);
+}
+.dz-center .dz {
+  max-width: 760px;
+  width: 100%;
+}
+
+.dz {
+  border: 2px dashed var(--bd);
+  border-radius: 12px;
+  padding: 70px 40px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg-alt);
+  transition: border-color 0.2s, background 0.2s;
+}
+.dz:hover { border-color: var(--red); background: var(--bg-dang); }
+.dz-ico { font-size: 32px; color: var(--t3); margin-bottom: 14px; }
+.dz-ttl {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.dz-sub { font-size: 12px; color: var(--t2); margin-bottom: 18px; }
+.dz-hint { font-size: 11px; color: var(--t3); margin-top: 12px; }
+
+.fn {
+  text-align: center;
+  padding: 10px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  min-width: 74px;
+}
+.fn-n { font-size: 15px; font-weight: 700; }
+.fn-l { font-size: 9px; color: var(--t2); margin-top: 2px; font-weight: 500; }
+.farr { color: var(--t3); font-size: 12px; display: flex; align-items: center; font-weight: 700; }
+.flist { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+.fpill {
+  padding: 5px 10px;
+  background: var(--bg-alt);
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.fpill.f-rd { border-color: rgba(220, 38, 38, 0.3); }
+.fp-n { font-size: 12px; font-weight: 700; }
+.fp-l { font-size: 10px; color: var(--t2); }
+
+/* Contextual help tooltip (TipComponent) — dezent, Hover: Leuchtblau */
+.tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+  font-size: 8px;
+  font-weight: 700;
+  font-style: normal;
+  cursor: help;
+  user-select: none;
+  vertical-align: middle;
+  margin-left: 3px;
+  flex-shrink: 0;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.tip-icon:hover {
+  opacity: 1;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.tip-box {
+  position: fixed;
+  z-index: 9999;
+  background: var(--t1);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 7px 11px;
+  border-radius: 7px;
+  max-width: 240px;
+  min-width: 160px;
+  pointer-events: none;
+  transform: translateX(-50%);
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font);
+  box-shadow: var(--sh2);
+  word-break: normal;
+  white-space: normal;
+}
+
+/* Sort/filter header controls */
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 3px;
+}
+.th-sort:hover { color: var(--t1); }
+.th-sort.th-active { color: var(--blue); }
+.sort-icon { font-size: 8px; opacity: 0.6; }
+.th-active .sort-icon { opacity: 1; }
+
+.th-filter {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 400;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  /* background-color (nicht background-Kurzform) — sonst würde der ▾-Chevron der
+     select-Regel bei select.th-filter überschrieben. */
+  background-color: var(--bg-inp);
+  color: var(--t1);
+  outline: none;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s;
+}
+/* Filter-Selects: Platz rechts für den ▾-Caret (Chevron kommt aus der select-Regel). */
+select.th-filter { padding-right: 22px; }
+.th-filter:hover { border-color: var(--blue); }
+.th-filter:focus { border-color: var(--blue); }
+.th-filter::placeholder { color: var(--t3); opacity: 1; }
+
+/* Suchbares WG-Dropdown in der KI-Prüfungs-Tabelle (req 2.3) — ersetzt das native
+   <select>. Trigger sieht aus wie das alte Select; das Popup (WgComboComponent)
+   liegt position:fixed und hat einen fixierten Kopf (Suche + „Neue WG"), nur die
+   Optionsliste scrollt. */
+.wg-combo-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 6px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  background: var(--bg-inp);
+  color: var(--t1);
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  transition: var(--tr);
+}
+.wg-combo-trigger:hover { border-color: var(--blue); }
+/* Noch der (unveränderte) KI-Vorschlag → dezent blau; manueller Override → normale Schrift */
+.wg-combo-trigger.wg-ai { color: var(--blue); font-weight: 600; }
+.wg-combo-caret { color: var(--t3); font-size: 10px; flex: none; }
+/* gemeinsam von Trigger und Option: lange WG-Namen abschneiden statt umbrechen */
+.wg-combo-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.wg-combo-panel {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.wg-combo-head {
+  flex: none;
+  padding: 6px;
+  border-bottom: 1px solid var(--bd);
+  background: var(--bg-alt);
+}
+.wg-combo-search {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 5px;
+  background: var(--bg-inp);
+  color: var(--t1);
+  outline: none;
+}
+.wg-combo-search:focus { border-color: var(--blue); }
+.wg-combo-add {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  text-align: left;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border: 1px dashed var(--bd);
+  border-radius: 5px;
+  background: var(--bg-card);
+  color: var(--blue);
+  cursor: pointer;
+  transition: var(--tr);
+}
+.wg-combo-add:hover { background: var(--bg-hov); border-color: var(--blue); }
+.wg-combo-list { overflow-y: auto; padding: 4px; }
+.wg-combo-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--t1);
+  cursor: pointer;
+}
+.wg-combo-opt.is-active { background: var(--bg-hov); }
+.wg-combo-opt.is-sel { font-weight: 700; }
+.wg-combo-opt.is-ai { color: var(--blue); font-weight: 600; }
+.wg-combo-ai-tag,
+.wg-combo-new-tag {
+  flex: none;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #fff;
+}
+.wg-combo-ai-tag { margin-left: auto; background: var(--blue); }
+/* „NEU" für selbst angelegte WGs */
+.wg-combo-new-tag { background: var(--green); }
+/* das KI-Tag schiebt sich per margin-left:auto nach rechts; ist keins da, übernimmt der
+   flex:1-Text das Schieben — damit NEU-Tag/⋮ dann ebenfalls rechts stehen */
+.wg-combo-opt:not(.is-ai) .wg-combo-new-tag { margin-left: auto; }
+.wg-combo-dots {
+  flex: none;
+  cursor: pointer;
+  padding: 0 4px;
+  color: var(--t2);
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 4px;
+}
+.wg-combo-dots:hover { background: var(--bg-card); color: var(--t1); }
+.wg-combo-empty { padding: 10px 8px; font-size: 12px; color: var(--t2); text-align: center; }
+
+/* ⋮-Aktionsmenü (Umbenennen / Löschen) — eigene fixed-Ebene über dem Panel,
+   damit es nicht vom overflow der scrollenden Optionsliste abgeschnitten wird. */
+.wg-combo-actions {
+  position: fixed;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  padding: 4px;
+  overflow: hidden;
+}
+.wg-combo-actions button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--t1);
+  cursor: pointer;
+}
+.wg-combo-actions button:hover { background: var(--bg-hov); }
+.wg-combo-actions button.danger { color: var(--red); }
+.wg-combo-actions button.danger:hover { background: var(--red); color: #fff; }
+
+/* ── Generisches Custom-Select (app-select) ──────────────────────────────────
+   Gleicher Look wie der WG-Combobox-Trigger; das geöffnete Menü ist ein eigenes
+   position:fixed-Popup (kein natives <select>-Menü mehr). */
+app-select { display: inline-block; }
+/* Variante für Tabellenkopf-Filter: füllt die Spaltenbreite, gleicher Abstand
+   zum Titel wie zuvor die .th-filter. */
+app-select.sel-fill { display: block; }
+app-select.sel-fill .sel-trigger { width: 100%; margin-top: 5px; }
+
+.sel-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 400;
+  /* in Tabellenköpfen (th) gelten uppercase + bold + letter-spacing — hier zurücksetzen */
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 4px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 4px;
+  background: var(--bg-inp);
+  color: var(--t1);
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  transition: var(--tr);
+}
+.sel-trigger:hover { border-color: var(--blue); }
+.sel-caret { color: var(--t3); font-size: 10px; flex: none; }
+.sel-trigger .sel-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sel-panel {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 16px);
+  background: var(--bg-card);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  outline: none;
+  /* das Popup ist DOM-Kind des th → uppercase/letter-spacing zurücksetzen */
+  text-transform: none;
+  letter-spacing: normal;
+}
+.sel-head {
+  flex: none;
+  padding: 6px;
+  border-bottom: 1px solid var(--bd);
+  background: var(--bg-alt);
+}
+.sel-search {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid var(--bd);
+  border-radius: 5px;
+  background: var(--bg-inp);
+  color: var(--t1);
+  outline: none;
+}
+.sel-search:focus { border-color: var(--blue); }
+.sel-list { overflow-y: auto; padding: 4px; }
+.sel-opt {
+  box-sizing: border-box;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 400;
+  padding: 6px 8px;
+  border-radius: 5px;
+  color: var(--t1);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sel-opt.is-active { background: var(--bg-hov); }
+/* gewählte Option dezent über Farbe markieren statt fett */
+.sel-opt.is-sel { color: var(--blue); }
+.sel-empty { padding: 10px 8px; font-size: 12px; color: var(--t2); text-align: center; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--t3);
+  border-radius: 6px;
+  /* transparenter Rand + padding-box → Thumb wirkt schlanker und klebt nicht am Rand */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--t2); background-clip: padding-box; }
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--t3) transparent; }

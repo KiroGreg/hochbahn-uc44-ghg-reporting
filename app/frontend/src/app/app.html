@@ -1,0 +1,132 @@
+@let f = funnel();
+@let b = state.budget();
+
+@if (!auth.authenticated()) {
+  <view-login />
+} @else {
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside id="sb">
+    <div class="sbh">
+      <img class="sbh-logo" src="hochbahn-logo-trim.png" alt="Hamburger Hochbahn AG" />
+      <div class="sbh-ttl">THG Analyse</div>
+      <div class="brow">
+        <span class="badge" style="background:rgba(13,154,242,0.25);color:#7dd3fc">CSRD · UC44</span>
+        <span class="badge" style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7)">v0.1</span>
+      </div>
+    </div>
+
+    <!-- Stammdaten: separater Einstieg, außerhalb des linearen Trichters — ganz oben -->
+    <div class="steps navx">
+      <div class="step" [class.step-act]="state.view() === 'warengruppen'" (click)="go('warengruppen')">
+        <div class="sdot" [class]="state.view() === 'warengruppen' ? 'sd-act' : 'sd-pen'">⚙</div>
+        <div>
+          <div class="sl-m">Warengruppen-Katalog</div>
+          <div class="sl-s">Stammdaten & Emissionsfaktoren</div>
+        </div>
+      </div>
+      <div class="step" [class.step-act]="state.view() === 'anreichern'" (click)="go('anreichern')">
+        <div class="sdot" [class]="state.view() === 'anreichern' ? 'sd-act' : 'sd-pen'">✨</div>
+        <div>
+          <div class="sl-m">Katalog anreichern</div>
+          <div class="sl-s">KI-Beschreibungen & Beispiele</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps">
+      @for (s of steps; track s.key; let i = $index) {
+        <div class="step" [class.step-act]="state.view() === s.key" (click)="go(s.key)">
+          <div class="sdot" [class]="stepClass(s.key)">{{ stepLabel(s.key, i) }}</div>
+          <div>
+            <div class="sl-m">{{ s.main }}</div>
+            <div class="sl-s">{{ s.sub }}</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="sfun">
+      <div class="ftit">Analyse-Trichter</div>
+      <div class="frow">
+        <div class="fnum">
+          {{ f.total .toLocaleString('de-DE') }}
+          <span style="color:rgba(255,255,255,0.5);font-size:12px;font-weight:400">Einträge</span>
+        </div>
+        <div class="fbar" style="background:#14b8a6;width:100%"></div>
+      </div>
+      <div class="frow">
+        <div class="fnum" style="color:#7dd3fc">
+          {{ f.notPlausible .toLocaleString('de-DE') }}
+          <span style="color:rgba(255,255,255,0.5);font-size:12px;font-weight:400">wahrscheinlich falsch</span>
+        </div>
+        <div class="fbar" style="background:#0D9AF2" [style.width.%]="f.pNot"></div>
+      </div>
+      <div class="frow">
+        <div class="fnum" style="color:#fcd34d">
+          {{ f.regrouped .toLocaleString('de-DE') }}
+          <span style="color:rgba(255,255,255,0.5);font-size:12px;font-weight:400">neu zugeordnet</span>
+        </div>
+        <div class="fbar" style="background:#f59e0b" [style.width.%]="f.pReg"></div>
+      </div>
+      <div class="frow" style="margin-bottom:0">
+        <div class="fnum" style="color:#fca5a5">
+          {{ f.lowOpen .toLocaleString('de-DE') }}
+          <span style="color:rgba(255,255,255,0.5);font-size:12px;font-weight:400">unsicher · offen</span>
+        </div>
+        <div class="fbar" style="background:#E2011F" [style.width.%]="f.pLow"></div>
+      </div>
+    </div>
+
+    @if (b) {
+      <div class="sbudg">
+        <div class="btit">API-Budget</div>
+        <div class="brow2">
+          <span>Verbraucht</span>
+          <span style="font-weight:700">${{ b.spent_usd }} / ${{ b.budget_usd }}</span>
+        </div>
+        <div class="btrk">
+          <div class="bfill" [style.width.%]="budgetPct()"></div>
+        </div>
+        <div style="font-size:11px;color:rgba(251,191,36,0.7)">
+          {{ b.model }} · {{ b.api_calls }} Calls · {{ b.cache_hits }} Cache
+        </div>
+      </div>
+    }
+
+    <div class="sfoot">
+      Uni Hamburg · D2S2C Hamburg<br />
+      Projekt 2026 · Q1–Q4 · Prototyp v0.1
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="mn">
+    <!-- Aubergine Top-Leiste: globale Aktionen & Status -->
+    <div id="tbar">
+      <span class="t-meta">{{ state.upload()?.filename || '—' }}</span>
+      <span id="s-badge">{{ stepBadge() }}</span>
+      <button class="tbar-btn" (click)="toggleTheme()" title="Hell/Dunkel wechseln (T)" aria-label="Farbschema wechseln">
+        @if (theme() === 'dark') { ☀ } @else { ☾ }
+      </button>
+      <button class="tbar-btn" (click)="logout()" title="Abmelden" aria-label="Abmelden">⎋</button>
+    </div>
+
+    <div class="panel">
+      <header id="tb">
+        <div id="tb-ttl">{{ title() }}</div>
+      </header>
+
+      <section id="va">
+        @switch (state.view()) {
+          @case ('upload') { <view-upload class="view on" /> }
+          @case ('review') { <view-review class="view on" /> }
+          @case ('dashboard') { <view-dashboard class="view on" /> }
+          @case ('warengruppen') { <view-warengruppen class="view on" /> }
+          @case ('anreichern') { <view-enrich class="view on" /> }
+        }
+      </section>
+    </div>
+  </main>
+</div>
+}

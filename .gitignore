@@ -1,0 +1,48 @@
+# Secrets
+.env
+**/.env
+*.env.local
+local
+app/certs/
+
+# Committed config defaults must NOT be ignored by the `.env` rules above.
+!.env.defaults
+!**/.env.defaults
+!.env.example
+!**/.env.example
+
+# Local SQLite fallback DB (created by bare `uvicorn` dev without Postgres)
+app/backend/uc44_local.db
+*.sqlite3
+
+# Personal planning docs — not git-relevant
+docs/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
+
+# Outputs / caches
+Use Case/plausibility_detection/outputs/
+Use Case/plausibility_detection/.cache/
+Use Case/models/*/outputs/
+Use Case/models/*/.cache/
+Use Case/notebooks/.cache/
+.cache/
+
+Use Case/scripts/review_prepared.json
+

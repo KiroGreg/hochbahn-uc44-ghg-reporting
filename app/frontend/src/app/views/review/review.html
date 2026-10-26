@@ -1,0 +1,391 @@
+@let result = state.prediction();
+@let stats = result?.stats;
+
+<div class="alert a-i">
+  <div>
+    Die KI analysiert alle Einträge automatisch und schlägt bei Bedarf eine bessere Kategorie vor.
+    Du legst selbst fest, ab welcher KI-Sicherheit und bis zu welchem Betrag Vorschläge automatisch übernommen werden — den Rest prüfst du manuell.
+  </div>
+</div>
+
+@if (isMock()) {
+  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#664d03">
+    <span style="font-weight:700;font-size:15px">DEV</span>
+    <div>
+      <strong>Mock-Daten aktiv (nur lokal)</strong> — Backend nicht erreichbar oder kein Guthaben.
+      Alle Views sind mit Beispieldaten befüllt. In Production nicht sichtbar.
+    </div>
+  </div>
+}
+
+@if (stats) {
+  <!-- Ergebnis-Übersicht der KI-Analyse -->
+  <div class="card mb14">
+    <div class="card-b">
+      <div class="fr fbt" style="flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">KI-Analyse abgeschlossen</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.8">
+            <span style="color:var(--green);font-weight:600">{{ summary().plausible.toLocaleString('de-DE') }}</span>
+            &nbsp;Einträge korrekt &mdash; WG bleibt
+            <br>
+            <span style="color:var(--blue);font-weight:600">{{ summary().highMed.toLocaleString('de-DE') }}</span>
+            &nbsp;neue WG vorgeschlagen (KI sehr sicher / sicher)
+            <br>
+            <span style="color:var(--red);font-weight:600">{{ summary().low.toLocaleString('de-DE') }}</span>
+            &nbsp;KI unsicher &mdash; bitte manuell prüfen
+          </div>
+        </div>
+        @if (summary().decided > 0) {
+          <span class="chip c-gr" style="font-size:11px;align-self:flex-start">{{ summary().decided }} entschieden</span>
+        }
+      </div>
+
+      <!-- 2. Lauf: mit aus Korrekturen gelernten Hinweisen neu analysieren -->
+      <div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:12px">
+        @if (busy()) {
+          @let st = runStatus();
+          <div class="fr fbt" style="font-size:12px;color:var(--t2);margin-bottom:4px">
+            <span>{{ phase() === 'predicting' ? '⟳ Korrektur (Modell 2)…' : '⟳ Prüfung (Modell 1)…' }}</span>
+            @if (st && st.plaus_total) { <span class="mono">{{ st.plaus_done }}/{{ st.plaus_total }}</span> }
+          </div>
+          <div class="ptrk"><div class="pfil" [style.background]="'var(--blue)'" [style.width.%]="phase() === 'predicting' ? predPct() : plausPct()"></div></div>
+        } @else {
+          <div class="fr fbt" style="flex-wrap:wrap;gap:8px">
+            <span style="display:flex;align-items:center;gap:6px">
+              <button class="btn bp" (click)="run(true)" [disabled]="busy()">
+                🧠 Mit gelernten Korrekturen neu analysieren
+              </button>
+              <app-tip text="Nach dem Reassignen lohnt ein 2. Lauf: die KI bekommt deine bestätigten Korrekturen ähnlicher Fälle als Kontext, identische Zeilen werden direkt übernommen."></app-tip>
+            </span>
+            <button class="btn" (click)="run(false)" [disabled]="busy()">🔁 Neu analysieren (ohne Hinweise)</button>
+            <button class="btn" (click)="loadComparison()" [disabled]="comparing()">
+              {{ comparison() ? 'Vergleich ausblenden' : '⇄ Vergleich Memory an/aus' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Stichproben: wo hat Memory die Vorhersage verändert? -->
+  @if (comparison(); as cmp) {
+    <div class="card mb14">
+      <div class="card-b">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px">Vergleich: Baseline vs. Memory</div>
+        @if (!cmp.has_baseline || !cmp.has_memory) {
+          <div class="alert a-i" style="margin-bottom:0">
+            <span class="a-ico">ℹ</span>
+            <div>Für den Vergleich brauchst du beide Läufe: einmal <strong>ohne</strong> Hinweise („🔁 Neu analysieren (ohne Hinweise)") und einmal <strong>mit</strong> („🧠 Mit gelernten Korrekturen neu analysieren").</div>
+          </div>
+        } @else {
+          <div class="tsm t2" style="margin-bottom:10px">
+            {{ cmp.compared }} Einträge verglichen ·
+            <strong style="color:var(--blue)">{{ cmp.changed }}</strong> durch Memory verändert
+            @if (cmp.memoized) { · davon {{ cmp.memoized }} direkt übernommen (memoized) }
+          </div>
+          @if (cmp.changed === 0) {
+            <div class="tsm t2">Memory hat keine Vorhersage verändert.</div>
+          } @else {
+            <div class="tw">
+              <table style="table-layout:fixed">
+                <thead>
+                  <tr>
+                    <th style="width:34%">Bestelltext</th>
+                    <th style="width:27%">Baseline (ohne)</th>
+                    <th style="width:27%">Memory (mit)</th>
+                    <th style="width:12%">Quelle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (it of cmp.items; track it.row_index) {
+                    <tr>
+                      <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.bestelltext }}</td>
+                      <td>{{ it.baseline_wg }} <span class="t2" style="font-size:10px">({{ it.baseline_confidence }})</span></td>
+                      <td style="color:var(--blue);font-weight:600">{{ it.memory_wg }} <span class="t2" style="font-size:10px;font-weight:400">({{ it.memory_confidence }})</span></td>
+                      <td><span class="chip" style="font-size:10px">{{ it.memory_source }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+}
+
+@if (state.upload() && !result) {
+  <div class="card mb14">
+    <div class="card-b">
+      <div class="fr fbt mb12">
+        <div>
+          <div style="font-size:13px;font-weight:700">Bereit für die KI-Analyse</div>
+          <div class="tsm t2">
+            {{ state.upload()!.row_count.toLocaleString('de-DE') }} Einträge geladen.
+            Modell 1 (Prüfung) und Modell 2 (Korrektur) laufen automatisch nacheinander.
+          </div>
+        </div>
+        <div class="fr">
+          <label class="tsm t2" style="display:flex;align-items:center;gap:5px"
+            [style.cursor]="busy() ? 'default' : 'pointer'" [style.opacity]="busy() ? 0.55 : 1">
+            <input type="checkbox" [checked]="enableHints()" [disabled]="busy()" (change)="enableHints.set($any($event.target).checked)" />
+            Gelernte Hinweise nutzen
+            <app-tip text="Speist aus früheren Korrekturen gelernte, ähnliche Fälle als zusätzlichen Kontext in die KI-Prediction ein (und übernimmt identische, bereits korrigierte Zeilen direkt)."></app-tip>
+          </label>
+          <label class="tsm t2">max. Zeilen</label>
+          <app-select [options]="maxRowsSelectOptions" [value]="maxRows()"
+            (valueChange)="maxRows.set($event)"></app-select>
+          <button class="btn bp" (click)="run()" [disabled]="busy()">
+            @if (phase() === 'checking') { Modell 1 läuft… }
+            @else if (phase() === 'predicting') { Modell 2 läuft… }
+            @else { Analyse starten }
+          </button>
+        </div>
+      </div>
+      @if (busy()) {
+        @let st = runStatus();
+        <div style="font-size:12px;color:var(--t2)">
+          <div class="fr fbt" style="margin-bottom:4px">
+            <span [style.color]="phase() === 'checking' ? 'var(--blue)' : 'var(--green)'">
+              {{ phase() === 'checking' ? '⟳ Prüfung (Modell 1)…' : '✓ Prüfung abgeschlossen' }}
+            </span>
+            @if (st && st.plaus_total) {
+              <span class="mono">{{ st.plaus_done }} / {{ st.plaus_total }}</span>
+            }
+          </div>
+          <div class="ptrk" style="margin-bottom:8px">
+            <div class="pfil" [style.background]="'var(--blue)'" [style.width.%]="plausPct()"></div>
+          </div>
+          @if (phase() === 'predicting') {
+            <div class="fr fbt" style="margin-bottom:4px">
+              <span style="color:var(--blue)">⟳ Korrektur (Modell 2)…</span>
+              @if (st && st.pred_total) {
+                <span class="mono">{{ st.pred_done }} / {{ st.pred_total }}</span>
+              }
+            </div>
+            <div class="ptrk" style="margin-bottom:6px">
+              <div class="pfil" [style.background]="'var(--green)'" [style.width.%]="predPct()"></div>
+            </div>
+          }
+          <div class="tsm t2">Läuft serverseitig – du kannst die Seite schließen und später über den Verlauf zurückkommen.</div>
+        </div>
+      }
+      @if (error()) {
+        <div class="alert a-w" style="margin-bottom:0">
+          <span class="a-ico">⚠</span><div>{{ error() }}</div>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (stats) {
+  <div class="g2 mb14">
+    <div class="kc"><div class="kl">Analysiert</div><div class="kv">{{ state.upload()?.row_count?.toLocaleString('de-DE') ?? '—' }}</div></div>
+    <div class="kc krd"><div class="kl">Nicht plausibel</div><div class="kv">{{ state.plausibility()?.stats?.implausible?.toLocaleString('de-DE') ?? stats.total }}</div></div>
+  </div>
+
+  <div class="card mb14">
+    <div class="card-h">Ergebnis-Verteilung</div>
+    <div class="card-b">
+      <div class="dbar">
+        <div [style.flex]="distribution().ok"   [style.background]="'var(--hb-leuchtblau)'"></div>
+        <div [style.flex]="distribution().high" [style.background]="'var(--green)'"></div>
+        <div [style.flex]="distribution().med"  [style.background]="'var(--amber)'"></div>
+        <div [style.flex]="distribution().low"  [style.background]="'var(--red)'"></div>
+      </div>
+      <div class="fr" style="gap:18px;font-size:11px;color:var(--t2)">
+        <span class="fr" style="gap:5px">
+          <span style="width:10px;height:10px;border-radius:2px;background:var(--hb-leuchtblau);display:inline-block"></span>
+          Korrekt — {{ summary().plausible }}
+        </span>
+        <span class="fr" style="gap:5px">
+          <span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span>
+          KI sehr sicher — {{ confCounts().hoch }}
+        </span>
+        <span class="fr" style="gap:5px">
+          <span style="width:10px;height:10px;border-radius:2px;background:var(--amber);display:inline-block"></span>
+          KI sicher — {{ confCounts().mittel }}
+        </span>
+        <span class="fr" style="gap:5px">
+          <span style="width:10px;height:10px;border-radius:2px;background:var(--red);display:inline-block"></span>
+          KI unsicher — {{ summary().low }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tbar">
+    <span class="tsm t2">Filter:</span>
+    <app-select [options]="statusSelectOptions()" [value]="statusFilter()"
+      (valueChange)="statusFilter.set($event)"></app-select>
+    <button class="btn" style="padding:5px 8px;font-size:12px" (click)="toggleSort('confidence')" title="Konfidenz-Sortierung umkehren">
+      {{ confSortLabel() }}
+    </button>
+
+    <div class="f1"></div>
+
+    <!-- Auto-Übernahme: mittig platziert, Button rot umrandet (req 2.1 / 2.2) -->
+    <span class="auto-accept">
+      <label class="tsm t2" style="white-space:nowrap">Auto-Übernahme ab
+        <app-tip text="Wähle das Konfidenz-Niveau, ab dem Vorschläge übernommen werden. Wirksam wird die Auswahl erst beim Klick auf „Auto-Bestätigen“."></app-tip>
+      </label>
+      <app-select [options]="autoConfSelectOptions" [value]="autoConfThreshold()"
+        (valueChange)="autoConfThreshold.set($event)"></app-select>
+      <label class="tsm t2" style="white-space:nowrap">bis Betrag (€)
+        <app-tip text="Vorschläge unter diesem Betrag werden automatisch übernommen — geringes finanzielles Risiko."></app-tip>
+      </label>
+      <input type="number" class="amount-input" step="100" min="0"
+        [ngModel]="autoCostThreshold()" (ngModelChange)="autoCostThreshold.set($event)" placeholder="1000">
+      <button class="btn aa-btn" (click)="autoAccept()" [disabled]="autoAffected() === 0"
+        aria-label="Auto-Übernahme auf das gewählte Konfidenz-Niveau anwenden"
+        title="Wendet das gewählte Konfidenz-Niveau an: {{ autoAffected() }} Zeile(n) würden sich ändern (offene Vorschläge bestätigen bzw. bei strengerem Niveau automatisch gesetzte Haken entfernen). Manuelle Entscheidungen bleiben erhalten.">
+        ✓ Auto-Bestätigen ({{ autoAffected() }})
+      </button>
+      <button class="btn" (click)="resetDecisions()" [disabled]="summary().decided === 0"
+        aria-label="Alle getroffenen Entscheidungen zurücksetzen"
+        title="Setzt alle Entscheidungen (automatisch und manuell) zurück auf den Ausgangszustand.">
+        ↺ Zurücksetzen
+      </button>
+    </span>
+
+    <div class="f1"></div>
+
+    <span class="badge b-bl">Audit-Log aktiv <app-tip text="Jede Entscheidung wird automatisch mit Zeitstempel, Zeilen-ID, Alt- und Neuwert protokolliert."></app-tip></span>
+    <button class="btn bsm" (click)="state.exportLog()" [disabled]="!state.changeLog().length">
+      ↓ Log exportieren ({{ state.changeLog().length }})
+      <app-tip text="Exportiert alle deine Entscheidungen als CSV-Datei — für eigene Auswertungen oder als Nachweis."></app-tip>
+    </button>
+    <button class="btn bp" (click)="goDashboard()" title="Zum Auswertungs-Dashboard wechseln">Auswertung ansehen →</button>
+  </div>
+
+  <div class="tw mb12">
+    <table style="table-layout:fixed">
+      <colgroup>
+        <col style="width:4%">
+        <col style="width:23%">
+        <col style="width:14%">
+        <col style="width:9%">
+        <col style="width:25%">
+        <col style="width:11%">
+        <col style="width:14%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th></th>
+          <th>
+            Bestelltext
+            <input class="th-filter" placeholder="Filter…" (input)="setFilter('bestelltext', $any($event.target).value)">
+          </th>
+          <th>
+            <div>WG bisher <app-tip text="Die ursprüngliche Warengruppe aus den Eingabedaten, bevor das Modell sie analysiert hat."></app-tip></div>
+            <app-select class="sel-fill" [options]="wgBisherSelectOptions()" [value]="wgBisherFilter()"
+              (valueChange)="wgBisherFilter.set($event)"></app-select>
+          </th>
+          <th>
+            <div>Betrag <app-tip text="Rechnungsbetrag (€) aus den hochgeladenen Daten. Steuert zusammen mit der Konfidenz die Auto-Übernahme und die Standard-Sortierung (höchste Beträge zuerst). Die beiden Filter-Bereiche folgen automatisch dem oben eingestellten Auto-Übernahme-Betrag."></app-tip></div>
+            <app-select class="sel-fill" [options]="betragSelectOptions()" [value]="betragFilter()"
+              (valueChange)="betragFilter.set($event)"></app-select>
+          </th>
+          <th>
+            <div>
+              Warengruppe
+              <app-tip text="Der KI-Vorschlag ist vorausgewählt (mit „(KI)“ markiert). Übernimm ihn mit ✓ oder wähle eine andere Warengruppe aus dem Katalog – dann gilt die Zeile als erledigt."></app-tip>
+            </div>
+            <app-select class="sel-fill" [options]="wgFilterSelectOptions()" [value]="wgFilter()"
+              (valueChange)="wgFilter.set($event)"></app-select>
+          </th>
+          <th>
+            <div>
+              Konfidenz <app-tip text="Wie sicher ist die KI bei diesem Vorschlag. Sehr sicher / Sicher: Vorschlag in der Regel zuverlässig. Unsicher: bitte manuell prüfen."></app-tip>
+            </div>
+            <app-select class="sel-fill" [options]="confSelectOptions()" [value]="confFilter()"
+              (valueChange)="confFilter.set($event)"></app-select>
+          </th>
+          <th style="text-align:center">Aktion <app-tip text="✓ bestätigt den KI-Vorschlag. ✗ lehnt ab. Alternativ: WG über das Dropdown wählen – dann entfallen die Buttons."></app-tip></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of sortedFiltered(); track r.row_index) {
+          <tr [class.row-dim]="!!r._decision">
+            <td style="text-align:center;padding:0 2px">
+              @if (plausMap().has(r.row_index)) {
+                <button
+                  style="background:none;border:none;cursor:pointer;color:var(--blue);font-size:16px;font-weight:700;padding:2px 4px;line-height:1"
+                  (click)="toggleExpand(r.row_index)"
+                  [title]="isExpanded(r.row_index) ? 'Modell-1-Begründung ausblenden' : 'Modell-1-Begründung anzeigen'">
+                  {{ isExpanded(r.row_index) ? '▾' : '▸' }}
+                </button>
+              }
+            </td>
+            <td [title]="r.bestelltext">{{ r.bestelltext }}</td>
+            <td style="color:var(--t2)" [title]="r.current_wg_name || '—'">{{ r.current_wg_name || '—' }}</td>
+            <td style="text-align:right;white-space:nowrap" [title]="r.betrag_eur != null ? r.betrag_eur + ' €' : 'kein Betrag in den Daten'">{{ formatBetrag(r.betrag_eur) }}</td>
+            <!-- Zusammengeführte Spalte: KI-Vorschlag ist Default + erste Option (req 2.3) -->
+            <td class="wg-cell">
+              <app-wg-combo
+                [value]="r._selected_wg ?? null"
+                [suggested]="r.suggested_wg_name ?? null"
+                [catalog]="catalog()"
+                [customWgs]="customWgs()"
+                (pick)="wgPick(r, $event)"
+                (addNew)="wgPick(r, ADD_NEW_WG)"
+                (renameWg)="renameCustomWg($event)"
+                (deleteWg)="deleteCustomWg($event)"></app-wg-combo>
+            </td>
+            <td><span class="chip" [class]="badge(r.confidence)">{{ confidenceLabel(r.confidence) }}</span></td>
+            <td style="text-align:center">
+              <div style="display:flex;gap:3px;align-items:center;justify-content:center">
+                @if (r._decision === 'new_wg') {
+                  <!-- Aktion leer wenn WG manuell gesetzt wurde (req 2.3.1) -->
+                } @else {
+                  <!-- Buttons bleiben sichtbar; erneuter Klick auf den aktiven Button macht die Entscheidung rückgängig -->
+                  <button class="abtn a-ok" [class.aa]="r._decision === 'ok'" (click)="toggleDecide(r, 'ok')"
+                    [title]="r._decision === 'ok' ? 'Bestätigung rückgängig machen' : 'KI-Vorschlag bestätigen'">✓</button>
+                  <button class="abtn a-no" [class.aa]="r._decision === 'reject'" (click)="toggleDecide(r, 'reject')"
+                    [title]="r._decision === 'reject' ? 'Ablehnung rückgängig machen' : 'Ablehnen'">✗</button>
+                }
+              </div>
+            </td>
+          </tr>
+          @if (isExpanded(r.row_index)) {
+            @let sig = plausMap().get(r.row_index)!;
+            <tr style="background:var(--bg-alt)">
+              <td></td>
+              <td colspan="6" style="padding:8px 12px;font-size:11px">
+                @if (sig.reason) {
+                  <div style="color:var(--t2);margin-bottom:6px;font-style:italic">
+                    <strong style="font-style:normal;color:var(--t1)">Begründung Modell 1:</strong> {{ sig.reason }}
+                  </div>
+                }
+                @if (sig.widersprechend.length) {
+                  <div style="margin-bottom:4px">
+                    <span style="color:var(--t2);font-weight:600;font-size:10px">Widersprechende Signale: </span>
+                    @for (s of sig.widersprechend; track s) {
+                      <span class="chip c-rd" style="margin-right:3px">{{ s }}</span>
+                    }
+                  </div>
+                }
+                @if (sig.unterstuetzend.length) {
+                  <div>
+                    <span style="color:var(--t2);font-weight:600;font-size:10px">Unterstützende Signale: </span>
+                    @for (s of sig.unterstuetzend; track s) {
+                      <span class="chip c-gr" style="margin-right:3px">{{ s }}</span>
+                    }
+                  </div>
+                }
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="fr fbt">
+    <span class="tsm t2">{{ sortedFiltered().length }} von {{ rows().length }} Einträgen</span>
+    <span class="tsm t2">Alle Änderungen geloggt: Nutzer / Zeitstempel</span>
+  </div>
+}

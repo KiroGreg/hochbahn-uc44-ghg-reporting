@@ -1,0 +1,89 @@
+# UC44 — THG Reporting prototype.
+#
+# Local:    docker compose up --build         → http://localhost:8080
+# VM:       docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# CONFIG LAYERING (every service loads, in order):
+#   1. .env.defaults  — committed, safe local defaults. Always present.
+#   2. .env           — gitignored, OPTIONAL. Real secrets / VM overrides.
+#                       Untracked, so `git pull` never overwrites it; the VM
+#                       keeps its own config across deploys. Wins over (1).
+# So a fresh clone runs with zero setup; the VM gets its overrides from its
+# own .env (template: .env.example).
+#
+# Notes:
+#   FRONTEND_PORT   host port nginx is exposed on (default 8080). The prod
+#                   overlay rebinds to 80/443.
+#   BACKEND_PORT    optional host port for direct backend access (debugging).
+#   pgdata          named volume holding the Postgres data (persists across
+#                   restarts; drop with `docker compose down -v`).
+
+x-env-files: &env-files
+  - path: .env.defaults
+    required: true
+  - path: .env
+    required: false
+
+services:
+  db:
+    # pgvector image = Postgres 16 + the `vector` extension (drop-in superset of
+    # postgres:16). Needed for the correction-memory embedding retrieval.
+    image: pgvector/pgvector:pg16
+    container_name: uc44-db
+    env_file: *env-files
+    volumes:
+      # Named volume = the persistent claim. Survives `docker compose down`
+      # (drop it explicitly with `docker compose down -v`).
+      - pgdata:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-uc44} -d $${POSTGRES_DB:-uc44}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: ..
+      dockerfile: app/backend/Dockerfile
+    container_name: uc44-backend
+    # DATABASE_URL, POSTGRES_*, UC44_AUTH_TOKEN, OPENAI_API_KEY, UC44_ENV all
+    # come from the layered env files above. (The LLM models also read the
+    # baked-in `Use Case/models/.env` for the OpenAI key as a local fallback.)
+    env_file: *env-files
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    # No public port mapping by default — the frontend container reaches
+    # the backend over the compose network at `http://backend:8000`. If
+    # you need direct access from the host for debugging, uncomment:
+    # ports:
+    #   - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health').status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: uc44-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      # Map to a single host port; ops team's nginx forwards 80/443 here.
+      - "${FRONTEND_PORT:-8080}:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

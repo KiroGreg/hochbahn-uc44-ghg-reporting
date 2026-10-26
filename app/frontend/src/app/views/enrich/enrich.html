@@ -1,0 +1,212 @@
+<div class="ew-wrap">
+  <!-- Stepper -->
+  <div class="ew-steps">
+    @for (s of [{ n: 1, t: 'Auswahl' }, { n: 2, t: 'Konfiguration' }, { n: 3, t: 'Lauf' }, { n: 4, t: 'Review' }]; track s.n) {
+      <div class="ew-step" [class.on]="step() === s.n" [class.done]="step() > s.n">
+        <span class="ew-step-n">{{ step() > s.n ? '✓' : s.n }}</span>
+        <span class="ew-step-t">{{ s.t }}</span>
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="ew-err">{{ error() }}</div>
+  }
+
+  <!-- ── Schritt 1: Auswahl ─────────────────────────────────────────────── -->
+  @if (step() === 1) {
+    @if (resumable(); as rb) {
+      <div class="ew-resume">
+        <span>Letzter Lauf abgeschlossen — {{ rb.done }} Vorschläge.</span>
+        <button class="ew-btn ew-btn-primary" (click)="openReview(rb)">Review öffnen</button>
+        <button class="ew-btn ew-btn-ghost" (click)="resumable.set(null)">Ausblenden</button>
+      </div>
+    }
+
+    <div class="ew-toolbar">
+      <input class="ew-search" type="text" placeholder="Suche nach Name oder ID…"
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      <label class="ew-chk"><input type="checkbox" [ngModel]="onlyIncomplete()" (ngModelChange)="onlyIncomplete.set($event)" /> nur unvollständige</label>
+      <label class="ew-chk"><input type="checkbox" [ngModel]="onlyHistory()" (ngModelChange)="onlyHistory.set($event)" /> nur mit Korrektur-Historie</label>
+      <span class="ew-spacer"></span>
+      <button class="ew-btn" (click)="selectIncomplete()">Unvollständige wählen</button>
+      <span class="ew-count">{{ filtered().length }} angezeigt · {{ selected().size }} gewählt</span>
+    </div>
+
+    @if (loading()) {
+      <div class="ew-empty">Lade Katalog…</div>
+    } @else {
+      <div class="ew-tablewrap">
+        <table class="ew-table">
+          <thead>
+            <tr>
+              <th class="c-sel"><input type="checkbox" [checked]="allFilteredSelected()" (change)="toggleAllFiltered()" /></th>
+              <th>Warengruppe</th>
+              <th class="c-vol" title="Beschreibung · enthält · nicht-enthält">Vollständigkeit</th>
+              <th class="c-hist" title="manuelle Korrekturen: Zuflüsse ↑ / Abflüsse ↓">Historie</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of filtered(); track r.wg_id) {
+              <tr [class.sel]="isSel(r.wg_id)" (click)="toggleSel(r.wg_id)">
+                <td class="c-sel"><input type="checkbox" [checked]="isSel(r.wg_id)" (click)="$event.stopPropagation()" (change)="toggleSel(r.wg_id)" /></td>
+                <td>
+                  <div class="ew-wgname">{{ r.wg_name }}</div>
+                  <code class="ew-wgid">{{ r.wg_id }}</code>
+                </td>
+                <td class="c-vol">
+                  @let comp = completeness(r);
+                  <span class="ew-dot" [class.on]="comp.desc" title="Beschreibung">B</span>
+                  <span class="ew-dot" [class.on]="comp.inc" title="Beispiele enthält">E</span>
+                  <span class="ew-dot" [class.on]="comp.exc" title="Beispiele nicht enthält">N</span>
+                </td>
+                <td class="c-hist">
+                  @let fx = fluxOf(r.wg_id);
+                  @if (fx.influx) { <span class="ew-flux ew-in" title="manuell hinein">↑{{ fx.influx }}</span> }
+                  @if (fx.outflux) { <span class="ew-flux ew-out" title="manuell heraus">↓{{ fx.outflux }}</span> }
+                  @if (!fx.influx && !fx.outflux) { <span class="ew-flux-none">—</span> }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="ew-empty">Keine Warengruppen für diese Filter.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ew-foot">
+        <span class="ew-count">{{ selected().size }} Warengruppe(n) ausgewählt</span>
+        <span class="ew-spacer"></span>
+        <button class="ew-btn ew-btn-ghost" [disabled]="!selected().size" (click)="clearSelection()">Auswahl leeren</button>
+        <button class="ew-btn ew-btn-primary" [disabled]="!selected().size" (click)="toConfig()">Weiter zur Konfiguration →</button>
+      </div>
+    }
+  }
+
+  <!-- ── Schritt 2: Konfiguration ───────────────────────────────────────── -->
+  @if (step() === 2) {
+    <div class="ew-config">
+      <h3>{{ selected().size }} Warengruppen anreichern</h3>
+
+      <label class="ew-chk ew-big">
+        <input type="checkbox" [ngModel]="autoPlan()" (ngModelChange)="autoPlan.set($event)" />
+        Plan pro Warengruppe automatisch ableiten
+        <em>(leere Felder werden generiert, gefüllte bleiben)</em>
+      </label>
+
+      @if (!autoPlan()) {
+        <div class="ew-plan">
+          @for (f of PLAN_FIELDS; track f.key) {
+            <label class="ew-planfld">
+              <span>{{ f.label }}</span>
+              <select [ngModel]="plan()[f.key]" (ngModelChange)="setAction(f.key, $event)">
+                <option value="lassen">lassen</option>
+                <option value="ergänzen">ergänzen</option>
+                <option value="neu">neu</option>
+              </select>
+            </label>
+          }
+        </div>
+      }
+
+      <label class="ew-chk ew-big">
+        <input type="checkbox" [ngModel]="useHistory()" (ngModelChange)="useHistory.set($event)" />
+        Historische Korrekturen einbeziehen
+        <em>(Zuflüsse → Beschreibung/enthält, Abflüsse → nicht-enthält)</em>
+      </label>
+
+      <p class="ew-hint">Der Lauf erzeugt Vorschläge im Hintergrund — du kannst die Seite verlassen und
+        später zur Review-Queue zurückkehren.</p>
+
+      <div class="ew-foot">
+        <button class="ew-btn ew-btn-ghost" (click)="step.set(1)">← Zurück</button>
+        <span class="ew-spacer"></span>
+        <button class="ew-btn ew-btn-primary" (click)="startRun()">✨ Anreicherung starten</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Schritt 3: Lauf ────────────────────────────────────────────────── -->
+  @if (step() === 3) {
+    <div class="ew-run">
+      @if (status(); as st) {
+        <div class="ew-run-h">
+          @if (st.status === 'running') { <span class="ew-spin"></span> Anreicherung läuft… }
+          @else if (st.status === 'failed') { <span class="ew-fail">Lauf fehlgeschlagen</span> }
+          @else { Fertig. }
+        </div>
+        <div class="ew-prog">
+          <div class="ew-prog-bar" [style.width.%]="progressPct()"></div>
+        </div>
+        <div class="ew-prog-lbl">{{ st.done }} / {{ st.total }} verarbeitet
+          @if (st.cost_usd) { · ~\${{ st.cost_usd | number: '1.0-4' }} }
+        </div>
+        @if (st.status === 'failed') {
+          <button class="ew-btn" (click)="step.set(1)">Zur Auswahl</button>
+        }
+      } @else {
+        <div class="ew-run-h"><span class="ew-spin"></span> Starte…</div>
+      }
+    </div>
+  }
+
+  <!-- ── Schritt 4: Review ──────────────────────────────────────────────── -->
+  @if (step() === 4) {
+    <div class="ew-review-h">
+      <div>
+        <strong>{{ reviewed() }} / {{ proposals().length }}</strong> bearbeitet
+      </div>
+      <span class="ew-spacer"></span>
+      @if (highConfidenceCount() > 0) {
+        <button class="ew-btn" (click)="acceptAllHigh()">✓ Alle hochkonfidenten übernehmen ({{ highConfidenceCount() }})</button>
+      }
+      <button class="ew-btn ew-btn-ghost" (click)="restart()">Neuer Lauf</button>
+    </div>
+
+    <div class="ew-queue">
+      @for (p of proposals(); track p.id) {
+        <div class="ew-prop" [class.is-open]="expanded() === p.id" [class.is-done]="p.state !== 'pending'">
+          <div class="ew-prop-h" (click)="expand(p)">
+            <span class="ew-caret">{{ expanded() === p.id ? '▾' : '▸' }}</span>
+            <span class="ew-prop-name">{{ p.wg_name }}</span>
+            @if (p.suggestion.konfidenz != null) {
+              <span class="ew-badge" [class.lo]="p.suggestion.konfidenz < 70" [class.hi]="p.suggestion.konfidenz >= 85">
+                {{ p.suggestion.konfidenz }}
+              </span>
+            }
+            @if (!changed(p)) { <span class="ew-tag ew-tag-nochg">unverändert</span> }
+            @if (p.history_used) { <span class="ew-tag ew-tag-hist">Historie</span> }
+            <span class="ew-spacer"></span>
+            @switch (p.state) {
+              @case ('accepted') { <span class="ew-state ok">✓ übernommen</span> }
+              @case ('rejected') { <span class="ew-state no">verworfen</span> }
+              @default { <span class="ew-state pending">offen</span> }
+            }
+          </div>
+
+          @if (expanded() === p.id) {
+            <div class="ew-prop-b">
+              <app-enrich-review
+                mode="review"
+                [wgName]="p.wg_name"
+                [wgId]="p.wg_id"
+                [current]="p.current"
+                [suggestion]="p.suggestion"
+                [historySignal]="propHist()[p.wg_id] || null"
+                [busy]="isBusy(p.id)"
+                applyLabel="Übernehmen & speichern"
+                [showReject]="true"
+                (refine)="onRefine(p, $event)"
+                (apply)="onApply(p, $event)"
+                (rejected)="onReject(p)"
+                (cancelled)="expanded.set(null)"
+              ></app-enrich-review>
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="ew-empty">Keine Vorschläge in diesem Lauf.</div>
+      }
+    </div>
+  }
+</div>

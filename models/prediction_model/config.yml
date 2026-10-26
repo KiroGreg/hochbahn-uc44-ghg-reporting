@@ -1,0 +1,95 @@
+# Configuration for the prediction model.
+#
+# Given an invoice line's pre-classification fields (free text + numeric
+# context), predict the most plausible Warengruppe from the dimension
+# catalog. No features derived from the label are used as input -- the
+# classifier must succeed on exactly the information that is available
+# before an assignment exists.
+
+llm:
+  base_url: https://api.openai.com/v1/
+  model: gpt-4o-mini
+  temperature: 0
+  api_key_env: OPENAI_API_KEY
+
+pricing:
+  # gpt-4o-mini pricing as of 2026-04.
+  input_per_1m_usd: 0.15
+  output_per_1m_usd: 0.60
+  # 25 USD covers a full 5000-row run on overlay_full (~16-17 USD); baseline
+  # stays well below 10 USD.
+  budget_usd: 25
+
+cache:
+  dir: .cache
+
+concurrency:
+  # Anzahl paralleler LLM-Worker. CLI --workers überschreibt.
+  workers: 8
+
+# Pre-prediction columns only. The Warengruppe / Kostenart labels and any
+# derived fields (WG_Bezeichnung, Kostenartenbezeichn., emission factors,
+# plausibility) are intentionally absent -- they constitute the label or
+# are computed from it.
+#
+# Per requirement 3.1 the classifier must not consider the booking date or
+# the price: `Wert/KWähr` (Betrag), `K.Währung` and `Buchungsdatum` are
+# deliberately omitted so the Warengruppe is inferred only from what was
+# procured, not when or at what cost. Quantity (Menge/Einheit) stays — it is
+# a physical descriptor of the item, not a price or date.
+input_columns:
+  bestelltext: Bestelltext
+  bezeichnung: Bezeichnung
+  objektbezeichnung: Objektbezeichnung
+  zusatz_1: Bezeichnung.1
+  zusatz_2: Bezeichnung.2
+  menge: Menge erfaßt gesamt
+  einheit: GebuchteMengeneinh
+
+# Catalog construction. The master Excel is never mutated -- the overlay
+# (LLM-enriched descriptions and structured examples) is joined in-memory.
+# Variants:
+#   - baseline           Master `Genauere Beschreibung` only.
+#   - overlay_desc       Overlay `wg_desc_llm` (master fallback when empty).
+#   - overlay_inclusive  Overlay description + Einschluss-Beispiele.
+#   - overlay_full       Overlay description + Einschluss + Ausschluss.
+catalog:
+  variant: overlay_full
+  master_path: dimWarengruppen_hashed.xlsx
+  overlay_path: dimWarengruppen_enriched_overlay.xlsx
+  description_max_chars: 220     # cap per-entry description length; null = unlimited
+  examples_max_inclusive: 4
+  examples_max_exclusive: 2
+  on_missing_overlay: warn       # error | warn | fallback_master
+
+prompt:
+  system: |
+    Du bist Fachklassifikator für Beschaffungsdaten eines öffentlichen
+    Verkehrsunternehmens (Hamburger Hochbahn). Deine Aufgabe: jeder Rechnungs-
+    position GENAU EINE Warengruppe aus einer vorgegebenen Liste zuweisen.{examples_hint}
+
+    Antworte IMMER als JSON mit genau diesen Feldern:
+    {
+      "warengruppe": "<exakter Name aus der Liste>",
+      "confidence": "hoch" | "mittel" | "niedrig",
+      "begruendung": "<kurze Begründung auf Deutsch, max. 200 Zeichen>"
+    }
+
+    Regeln:
+    - Der Wert von "warengruppe" MUSS buchstabengetreu einem Listeneintrag entsprechen.
+    - Wenn keine Gruppe klar passt, wähle die semantisch nächstliegende und setze
+      confidence=niedrig.
+    - Bei sehr kurzen / mehrdeutigen Texten: confidence=niedrig.
+
+  user_template: |
+    Verfügbare Warengruppen:
+    {catalog}
+
+    Rechnungsposition:
+    - Bestelltext: {bestelltext}
+    - Bezeichnung: {bezeichnung}
+    - Objektbezeichnung: {objektbezeichnung}
+    - Zusatz: {zusatz}
+    - Menge: {menge} {einheit}
+
+    Welche Warengruppe passt?

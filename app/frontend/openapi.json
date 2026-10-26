@@ -1,0 +1,3670 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "UC44 \u2014 THG Reporting API",
+    "description": "Backend for the Hamburger Hochbahn THG-reporting prototype. Drives the four-step flow shown in the sketch: upload, plausibility check (model 1), regrouping (model 2), dashboard.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/auth/check": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Validate the bearer token; returns 200 on success, 401 otherwise.",
+        "operationId": "check_api_auth_check_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Check Api Auth Check Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/status": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Whether the server requires authentication (no token needed).",
+        "operationId": "status_api_auth_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Status Api Auth Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/upload/file": {
+      "post": {
+        "tags": [
+          "upload"
+        ],
+        "summary": "Upload an invoice Excel file",
+        "operationId": "upload_file_api_upload_file_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_api_upload_file_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/upload/sample": {
+      "post": {
+        "tags": [
+          "upload"
+        ],
+        "summary": "Load the bundled HHA sample invoice file (5000 rows).",
+        "operationId": "load_sample_api_upload_sample_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/upload/reset": {
+      "post": {
+        "tags": [
+          "upload"
+        ],
+        "summary": "Drop the in-memory session state.",
+        "operationId": "reset_session_api_upload_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Reset Session Api Upload Reset Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plausibility/run": {
+      "post": {
+        "tags": [
+          "plausibility"
+        ],
+        "summary": "Run plausibility model 1 over the uploaded invoices.",
+        "operationId": "run_api_plausibility_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunOptions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlausibilityRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plausibility/decision": {
+      "post": {
+        "tags": [
+          "plausibility"
+        ],
+        "summary": "Record the user's decision on a single plausibility row.",
+        "operationId": "decision_api_plausibility_decision_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Decision Api Plausibility Decision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prediction/catalog": {
+      "get": {
+        "tags": [
+          "prediction"
+        ],
+        "summary": "Return the Warengruppe catalog the prediction model picks from.",
+        "operationId": "catalog_api_prediction_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogEntry"
+                  },
+                  "type": "array",
+                  "title": "Response Catalog Api Prediction Catalog Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prediction/run": {
+      "post": {
+        "tags": [
+          "prediction"
+        ],
+        "summary": "Run prediction model 2 over the entries flagged implausible by model 1.",
+        "operationId": "run_api_prediction_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunOptions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prediction/decision": {
+      "post": {
+        "tags": [
+          "prediction"
+        ],
+        "summary": "Record the user's decision on a single regrouping suggestion.",
+        "operationId": "decision_api_prediction_decision_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Decision Api Prediction Decision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prediction/decision/{row_index}": {
+      "delete": {
+        "tags": [
+          "prediction"
+        ],
+        "summary": "Undo a single decision (back to pending) without touching the others.",
+        "operationId": "clear_decision_api_prediction_decision__row_index__delete",
+        "parameters": [
+          {
+            "name": "row_index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Row Index"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Clear Decision Api Prediction Decision  Row Index  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Aggregate KPIs, funnel and Top-WG ranking for the dashboard view.",
+        "operationId": "dashboard_api_dashboard_get",
+        "parameters": [
+          {
+            "name": "jahr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Jahr f\u00fcr die Emissionsfaktoren",
+              "title": "Jahr"
+            },
+            "description": "Jahr f\u00fcr die Emissionsfaktoren"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/budget": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Combined token spend across both models.",
+        "operationId": "budget_api_dashboard_budget_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "List persisted runs (history), newest first.",
+        "operationId": "list_runs_api_runs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RunSummary"
+                  },
+                  "type": "array",
+                  "title": "Response List Runs Api Runs Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/analyze": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Start the two-stage analysis for the active run in the background.",
+        "operationId": "analyze_api_runs_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunOptions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run_id}/status": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Poll a run's progress (derived live from the DB).",
+        "operationId": "run_status_api_runs__run_id__status_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run_id}/compare": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Diff baseline vs. memory predictions for a run (spot-check changes).",
+        "operationId": "compare_api_runs__run_id__compare_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Resume a run: rebuild it from the DB and make it the active run.",
+        "operationId": "get_run_api_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen": {
+      "get": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "List all Warengruppen.",
+        "operationId": "list_warengruppen_api_warengruppen_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WarengruppeRow"
+                  },
+                  "type": "array",
+                  "title": "Response List Warengruppen Api Warengruppen Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Create a Warengruppe (generates a wg_id if none is given).",
+        "operationId": "create_warengruppe_api_warengruppen_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarengruppeUpsertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarengruppeRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen/{wg_id}": {
+      "get": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Get a single Warengruppe by its wg_id.",
+        "operationId": "get_warengruppe_api_warengruppen__wg_id__get",
+        "parameters": [
+          {
+            "name": "wg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Wg Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarengruppeRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Update a Warengruppe (wg_id is immutable).",
+        "operationId": "update_warengruppe_api_warengruppen__wg_id__put",
+        "parameters": [
+          {
+            "name": "wg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Wg Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarengruppeUpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarengruppeRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Delete a Warengruppe and its emission factors (blocked if referenced).",
+        "operationId": "delete_warengruppe_api_warengruppen__wg_id__delete",
+        "parameters": [
+          {
+            "name": "wg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Wg Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Warengruppe Api Warengruppen  Wg Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen/bulk-delete": {
+      "post": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Delete several Warengruppen at once by their wg_ids (skips referenced).",
+        "operationId": "bulk_delete_warengruppen_api_warengruppen_bulk_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkDeleteResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen/{wg_id}/deactivate": {
+      "post": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Deactivate a Warengruppe (hidden from the LLM, kept for history).",
+        "operationId": "deactivate_warengruppe_api_warengruppen__wg_id__deactivate_post",
+        "parameters": [
+          {
+            "name": "wg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Wg Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarengruppeRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen/{wg_id}/activate": {
+      "post": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Re-activate a Warengruppe (offered to the LLM again).",
+        "operationId": "activate_warengruppe_api_warengruppen__wg_id__activate_post",
+        "parameters": [
+          {
+            "name": "wg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Wg Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarengruppeRow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen/bulk-set-active": {
+      "post": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Activate or deactivate several Warengruppen at once by their wg_ids.",
+        "operationId": "bulk_set_active_warengruppen_api_warengruppen_bulk_set_active_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkActiveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warengruppen/import": {
+      "post": {
+        "tags": [
+          "warengruppen"
+        ],
+        "summary": "Bulk-import Warengruppen from an XLSX/CSV upload (upsert by wg_id).",
+        "operationId": "import_warengruppen_api_warengruppen_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_warengruppen_api_warengruppen_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/preview": {
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Generate a proposal (atomic, not saved).",
+        "operationId": "preview_api_enrichment_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrichRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichSuggestion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/refine": {
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Incorporate annotations (atomic).",
+        "operationId": "refine_api_enrichment_refine_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrichRefineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichSuggestion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/history-signal/{wg_id}": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Manual in-/out-flux (correction history) for one Warengruppe.",
+        "operationId": "history_signal_api_enrichment_history_signal__wg_id__get",
+        "parameters": [
+          {
+            "name": "wg_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Wg Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistorySignal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/history-signals": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "In-/out-flux counts for every Warengruppe (wizard selection badges).",
+        "operationId": "history_signals_api_enrichment_history_signals_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "additionalProperties": {
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  "type": "object",
+                  "title": "Response History Signals Api Enrichment History Signals Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/batch": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "List enrichment batches (newest first).",
+        "operationId": "list_batches_api_enrichment_batch_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EnrichBatchStatus"
+                  },
+                  "type": "array",
+                  "title": "Response List Batches Api Enrichment Batch Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Start a bulk enrichment batch (background).",
+        "operationId": "start_batch_api_enrichment_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkEnrichRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichBatchStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/batch/{batch_id}/status": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Poll a batch's progress.",
+        "operationId": "batch_status_api_enrichment_batch__batch_id__status_get",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichBatchStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/batch/{batch_id}": {
+      "get": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Batch status + proposals (review queue).",
+        "operationId": "batch_detail_api_enrichment_batch__batch_id__get",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichBatchDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/proposal/{proposal_id}/apply": {
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Apply a proposal to its Warengruppe.",
+        "operationId": "apply_proposal_api_enrichment_proposal__proposal_id__apply_post",
+        "parameters": [
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Proposal Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrichApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichProposal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/proposal/{proposal_id}/reject": {
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Reject a proposal.",
+        "operationId": "reject_proposal_api_enrichment_proposal__proposal_id__reject_post",
+        "parameters": [
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Proposal Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichProposal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/enrichment/proposal/{proposal_id}/refine": {
+      "post": {
+        "tags": [
+          "enrichment"
+        ],
+        "summary": "Refine a proposal with annotations.",
+        "operationId": "refine_proposal_api_enrichment_proposal__proposal_id__refine_post",
+        "parameters": [
+          {
+            "name": "proposal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Proposal Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalRefineRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrichProposal"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_import_warengruppen_api_warengruppen_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File",
+            "format": "binary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_warengruppen_api_warengruppen_import_post"
+      },
+      "Body_upload_file_api_upload_file_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File",
+            "format": "binary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_file_api_upload_file_post"
+      },
+      "BudgetStats": {
+        "properties": {
+          "spent_usd": {
+            "type": "number",
+            "title": "Spent Usd"
+          },
+          "budget_usd": {
+            "type": "number",
+            "title": "Budget Usd"
+          },
+          "api_calls": {
+            "type": "integer",
+            "title": "Api Calls"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "title": "Cache Hits"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spent_usd",
+          "budget_usd",
+          "api_calls",
+          "cache_hits",
+          "model"
+        ],
+        "title": "BudgetStats"
+      },
+      "BulkActiveRequest": {
+        "properties": {
+          "wg_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wg Ids"
+          },
+          "aktiv": {
+            "type": "boolean",
+            "title": "Aktiv"
+          }
+        },
+        "type": "object",
+        "required": [
+          "aktiv"
+        ],
+        "title": "BulkActiveRequest",
+        "description": "Activate (`aktiv=True`) or deactivate (`aktiv=False`) several Warengruppen."
+      },
+      "BulkActiveResult": {
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "title": "Updated",
+            "default": 0
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found"
+          }
+        },
+        "type": "object",
+        "title": "BulkActiveResult",
+        "description": "Outcome of a bulk activate/deactivate: how many changed, which were unknown."
+      },
+      "BulkDeleteRequest": {
+        "properties": {
+          "wg_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wg Ids"
+          }
+        },
+        "type": "object",
+        "title": "BulkDeleteRequest",
+        "description": "Delete several Warengruppen at once by their business keys."
+      },
+      "BulkDeleteResult": {
+        "properties": {
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted",
+            "default": 0
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found"
+          },
+          "blocked": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Blocked"
+          }
+        },
+        "type": "object",
+        "title": "BulkDeleteResult",
+        "description": "Outcome of a bulk delete: how many were removed, which were unknown.\n\n`blocked` lists ids that were kept because they are still referenced by\nhistorical data (see the delete protection in `services/warengruppen.py`);\nthose should be deactivated instead of deleted."
+      },
+      "BulkEnrichRequest": {
+        "properties": {
+          "wg_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Wg Ids"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default per-field plan; None \u2192 derive per WG from its state."
+          },
+          "use_history": {
+            "type": "boolean",
+            "title": "Use History",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "BulkEnrichRequest",
+        "description": "Start a background enrichment batch over the selected Warengruppen."
+      },
+      "CatalogEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CatalogEntry"
+      },
+      "ChangeLogRecord": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "row_index": {
+            "type": "integer",
+            "title": "Row Index"
+          },
+          "field_changed": {
+            "type": "string",
+            "title": "Field Changed"
+          },
+          "old_value": {
+            "type": "string",
+            "title": "Old Value"
+          },
+          "new_value": {
+            "type": "string",
+            "title": "New Value"
+          },
+          "user_action": {
+            "type": "string",
+            "title": "User Action"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "stage",
+          "row_index",
+          "field_changed",
+          "old_value",
+          "new_value",
+          "user_action"
+        ],
+        "title": "ChangeLogRecord",
+        "description": "A historised decision event, shaped for the frontend audit log."
+      },
+      "ComparisonItem": {
+        "properties": {
+          "row_index": {
+            "type": "integer",
+            "title": "Row Index"
+          },
+          "bestelltext": {
+            "type": "string",
+            "title": "Bestelltext"
+          },
+          "baseline_wg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Wg"
+          },
+          "baseline_confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Confidence"
+          },
+          "memory_wg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Wg"
+          },
+          "memory_confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Confidence"
+          },
+          "memory_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_index",
+          "bestelltext"
+        ],
+        "title": "ComparisonItem",
+        "description": "One sample where the memory-assisted run disagreed with the baseline."
+      },
+      "ComparisonResult": {
+        "properties": {
+          "compared": {
+            "type": "integer",
+            "title": "Compared",
+            "default": 0
+          },
+          "changed": {
+            "type": "integer",
+            "title": "Changed",
+            "default": 0
+          },
+          "memoized": {
+            "type": "integer",
+            "title": "Memoized",
+            "default": 0
+          },
+          "has_baseline": {
+            "type": "boolean",
+            "title": "Has Baseline",
+            "default": false
+          },
+          "has_memory": {
+            "type": "boolean",
+            "title": "Has Memory",
+            "default": false
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "title": "ComparisonResult",
+        "description": "Baseline vs. memory predictions for a run, for human spot-checking."
+      },
+      "DashboardKPIs": {
+        "properties": {
+          "co2_before_t": {
+            "type": "number",
+            "title": "Co2 Before T"
+          },
+          "co2_after_t": {
+            "type": "number",
+            "title": "Co2 After T"
+          },
+          "co2_delta_pct": {
+            "type": "number",
+            "title": "Co2 Delta Pct"
+          },
+          "not_calculable": {
+            "type": "integer",
+            "title": "Not Calculable"
+          },
+          "regroup_rate_pct": {
+            "type": "number",
+            "title": "Regroup Rate Pct"
+          },
+          "eur_total": {
+            "type": "number",
+            "title": "Eur Total"
+          },
+          "top_wg_share_pct": {
+            "type": "number",
+            "title": "Top Wg Share Pct"
+          },
+          "eur_regrouped": {
+            "type": "number",
+            "title": "Eur Regrouped"
+          },
+          "eur_avg_per_entry": {
+            "type": "number",
+            "title": "Eur Avg Per Entry"
+          }
+        },
+        "type": "object",
+        "required": [
+          "co2_before_t",
+          "co2_after_t",
+          "co2_delta_pct",
+          "not_calculable",
+          "regroup_rate_pct",
+          "eur_total",
+          "top_wg_share_pct",
+          "eur_regrouped",
+          "eur_avg_per_entry"
+        ],
+        "title": "DashboardKPIs"
+      },
+      "DashboardResponse": {
+        "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/DashboardKPIs"
+          },
+          "funnel": {
+            "$ref": "#/components/schemas/FunnelStats"
+          },
+          "top_wg": {
+            "items": {
+              "$ref": "#/components/schemas/TopWGEntry"
+            },
+            "type": "array",
+            "title": "Top Wg"
+          },
+          "ranking": {
+            "items": {
+              "$ref": "#/components/schemas/TopWGEntry"
+            },
+            "type": "array",
+            "title": "Ranking"
+          },
+          "available_years": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Available Years"
+          },
+          "selected_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Year"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kpis",
+          "funnel",
+          "top_wg",
+          "ranking"
+        ],
+        "title": "DashboardResponse"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "row_index": {
+            "type": "integer",
+            "title": "Row Index"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "reject",
+              "regroup",
+              "new_wg"
+            ],
+            "title": "Decision"
+          },
+          "new_wg_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Wg Name",
+            "description": "Target Warengruppe when the user remaps a row (decision 'regroup'/'new_wg'). Persisted as the new_value of the historised decision event."
+          },
+          "old_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Value",
+            "description": "Previous Warengruppe/decision value, for the audit trail."
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_index",
+          "decision"
+        ],
+        "title": "DecisionRequest"
+      },
+      "DecisionState": {
+        "properties": {
+          "row_index": {
+            "type": "integer",
+            "title": "Row Index"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "reject",
+              "regroup",
+              "new_wg"
+            ],
+            "title": "Decision"
+          },
+          "selected_wg": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Wg"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_index",
+          "decision"
+        ],
+        "title": "DecisionState",
+        "description": "The current (newest) decision for a sample, to restore the review table."
+      },
+      "EmissionsfaktorRow": {
+        "properties": {
+          "jahr": {
+            "type": "integer",
+            "title": "Jahr"
+          },
+          "wert": {
+            "type": "number",
+            "title": "Wert"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jahr",
+          "wert"
+        ],
+        "title": "EmissionsfaktorRow",
+        "description": "One spend-based emission factor (kg CO2e / \u20ac) for a reporting year."
+      },
+      "EnrichApplyRequest": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichContent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "EnrichApplyRequest",
+        "description": "Apply a proposal to its Warengruppe; `content` overrides with edited values."
+      },
+      "EnrichBatchDetail": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/EnrichBatchStatus"
+          },
+          "proposals": {
+            "items": {
+              "$ref": "#/components/schemas/EnrichProposal"
+            },
+            "type": "array",
+            "title": "Proposals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "EnrichBatchDetail",
+        "description": "A batch's status plus its proposals \u2014 the review queue payload."
+      },
+      "EnrichBatchStatus": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done",
+            "default": 0
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "use_history": {
+            "type": "boolean",
+            "title": "Use History",
+            "default": false
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "EnrichBatchStatus",
+        "description": "Pollable progress of an enrichment batch \u2014 derived from the DB."
+      },
+      "EnrichContent": {
+        "properties": {
+          "beschreibung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beschreibung"
+          },
+          "examples_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Enthalten"
+          },
+          "examples_nicht_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Nicht Enthalten"
+          }
+        },
+        "type": "object",
+        "title": "EnrichContent",
+        "description": "The current field values a suggestion is based on (may hold unsaved edits)."
+      },
+      "EnrichPlan": {
+        "properties": {
+          "beschreibung": {
+            "type": "string",
+            "enum": [
+              "lassen",
+              "erg\u00e4nzen",
+              "neu"
+            ],
+            "title": "Beschreibung",
+            "default": "neu"
+          },
+          "examples_enthalten": {
+            "type": "string",
+            "enum": [
+              "lassen",
+              "erg\u00e4nzen",
+              "neu"
+            ],
+            "title": "Examples Enthalten",
+            "default": "neu"
+          },
+          "examples_nicht_enthalten": {
+            "type": "string",
+            "enum": [
+              "lassen",
+              "erg\u00e4nzen",
+              "neu"
+            ],
+            "title": "Examples Nicht Enthalten",
+            "default": "neu"
+          }
+        },
+        "type": "object",
+        "title": "EnrichPlan",
+        "description": "Per-field action for one enrichment call. Defaults to full generation."
+      },
+      "EnrichProposal": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "batch_id": {
+            "type": "string",
+            "title": "Batch Id"
+          },
+          "wg_id": {
+            "type": "string",
+            "title": "Wg Id"
+          },
+          "wg_name": {
+            "type": "string",
+            "title": "Wg Name"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/EnrichPlan"
+          },
+          "current": {
+            "$ref": "#/components/schemas/EnrichContent"
+          },
+          "suggestion": {
+            "$ref": "#/components/schemas/EnrichSuggestion"
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "default": "pending"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied",
+            "default": false
+          },
+          "history_used": {
+            "type": "boolean",
+            "title": "History Used",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "batch_id",
+          "wg_id",
+          "wg_name",
+          "plan",
+          "current",
+          "suggestion"
+        ],
+        "title": "EnrichProposal",
+        "description": "One persisted proposal in a batch's review queue."
+      },
+      "EnrichRefineRequest": {
+        "properties": {
+          "wg_name": {
+            "type": "string",
+            "title": "Wg Name"
+          },
+          "current": {
+            "$ref": "#/components/schemas/EnrichContent"
+          },
+          "annotations": {
+            "$ref": "#/components/schemas/FieldAnnotations"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "use_history": {
+            "type": "boolean",
+            "title": "Use History",
+            "default": false
+          },
+          "wg_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wg Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wg_name",
+          "current",
+          "annotations"
+        ],
+        "title": "EnrichRefineRequest",
+        "description": "Atomic refine: incorporate per-field annotations into the current draft."
+      },
+      "EnrichRequest": {
+        "properties": {
+          "wg_name": {
+            "type": "string",
+            "title": "Wg Name"
+          },
+          "content": {
+            "$ref": "#/components/schemas/EnrichContent"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "use_history": {
+            "type": "boolean",
+            "title": "Use History",
+            "default": false
+          },
+          "wg_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wg Id",
+            "description": "For the history signal; may be omitted for unsaved/new WGs."
+          }
+        },
+        "type": "object",
+        "required": [
+          "wg_name"
+        ],
+        "title": "EnrichRequest",
+        "description": "Atomic generate: work on the given content (plan=None \u2192 auto-derive)."
+      },
+      "EnrichSuggestion": {
+        "properties": {
+          "beschreibung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beschreibung"
+          },
+          "examples_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Enthalten"
+          },
+          "examples_nicht_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Nicht Enthalten"
+          },
+          "konfidenz": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Konfidenz"
+          },
+          "anmerkung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anmerkung"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "diff_kurz": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diff Kurz"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/EnrichPlan"
+          },
+          "history_used": {
+            "type": "boolean",
+            "title": "History Used",
+            "default": false
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens",
+            "default": 0
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens",
+            "default": 0
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "title": "EnrichSuggestion",
+        "description": "An LLM enrichment proposal (not yet saved). Mirrors the notebook JSON."
+      },
+      "FieldAnnotations": {
+        "properties": {
+          "beschreibung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beschreibung"
+          },
+          "examples_enthalten": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples Enthalten"
+          },
+          "examples_nicht_enthalten": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Examples Nicht Enthalten"
+          }
+        },
+        "type": "object",
+        "title": "FieldAnnotations",
+        "description": "Free-text 'Anmerkung f\u00fcr KI' per field, fed back into the refine call."
+      },
+      "FunnelStats": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "not_plausible": {
+            "type": "integer",
+            "title": "Not Plausible"
+          },
+          "regrouped": {
+            "type": "integer",
+            "title": "Regrouped"
+          },
+          "low_open": {
+            "type": "integer",
+            "title": "Low Open"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "not_plausible",
+          "regrouped",
+          "low_open"
+        ],
+        "title": "FunnelStats"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoryItem": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 1
+          },
+          "betrag_eur": {
+            "type": "number",
+            "title": "Betrag Eur",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "HistoryItem",
+        "description": "One aggregated manual-correction pattern (a Bestelltext), for the signal."
+      },
+      "HistorySignal": {
+        "properties": {
+          "wg_id": {
+            "type": "string",
+            "title": "Wg Id"
+          },
+          "influx_count": {
+            "type": "integer",
+            "title": "Influx Count",
+            "default": 0
+          },
+          "outflux_count": {
+            "type": "integer",
+            "title": "Outflux Count",
+            "default": 0
+          },
+          "top_influx": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            },
+            "type": "array",
+            "title": "Top Influx"
+          },
+          "top_outflux": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            },
+            "type": "array",
+            "title": "Top Outflux"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wg_id"
+        ],
+        "title": "HistorySignal",
+        "description": "Manual in-/out-flux for a Warengruppe \u2014 the enrichment history signal.\n\ninflux  = rows a human manually moved INTO this WG (decision_event.new_value)\n          \u2192 its description/examples_enthalten likely miss these cases.\noutflux = rows a human manually moved OUT of this WG (old_value)\n          \u2192 its examples_nicht_enthalten / scope boundary should be sharpened."
+      },
+      "ImportResult": {
+        "properties": {
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated",
+            "default": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "title": "ImportResult",
+        "description": "Outcome of a catalog import (upsert by wg_id)."
+      },
+      "PlausibilityRow": {
+        "properties": {
+          "row_index": {
+            "type": "integer",
+            "title": "Row Index"
+          },
+          "bestelltext": {
+            "type": "string",
+            "title": "Bestelltext"
+          },
+          "objektbezeichnung": {
+            "type": "string",
+            "title": "Objektbezeichnung"
+          },
+          "wg_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wg Id"
+          },
+          "wg_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wg Name"
+          },
+          "kostenart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kostenart"
+          },
+          "betrag_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Betrag Eur",
+            "description": "Invoice amount in EUR from the uploaded file, if an amount column was present."
+          },
+          "plausibilitaet": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "plausibel",
+                  "implausibel",
+                  "unklar"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plausibilitaet"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "hoch",
+              "mittel",
+              "niedrig",
+              "unknown",
+              "error",
+              "not_assessable"
+            ],
+            "title": "Confidence"
+          },
+          "unterstuetzende_signale": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unterstuetzende Signale"
+          },
+          "widersprechende_signale": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Widersprechende Signale"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "reject",
+                  "regroup",
+                  "new_wg"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_index",
+          "bestelltext",
+          "objektbezeichnung",
+          "confidence",
+          "reason"
+        ],
+        "title": "PlausibilityRow"
+      },
+      "PlausibilityRunResponse": {
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/PlausibilityStats"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PlausibilityRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "api_calls": {
+            "type": "integer",
+            "title": "Api Calls"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "title": "Cache Hits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stats",
+          "rows",
+          "cost_usd",
+          "api_calls",
+          "cache_hits"
+        ],
+        "title": "PlausibilityRunResponse"
+      },
+      "PlausibilityStats": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "plausible": {
+            "type": "integer",
+            "title": "Plausible"
+          },
+          "implausible": {
+            "type": "integer",
+            "title": "Implausible"
+          },
+          "unklar": {
+            "type": "integer",
+            "title": "Unklar",
+            "default": 0
+          },
+          "not_assessable": {
+            "type": "integer",
+            "title": "Not Assessable",
+            "default": 0
+          },
+          "low_confidence": {
+            "type": "integer",
+            "title": "Low Confidence"
+          },
+          "objektbez_fallback": {
+            "type": "integer",
+            "title": "Objektbez Fallback"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "plausible",
+          "implausible",
+          "low_confidence",
+          "objektbez_fallback"
+        ],
+        "title": "PlausibilityStats"
+      },
+      "PredictionRow": {
+        "properties": {
+          "row_index": {
+            "type": "integer",
+            "title": "Row Index"
+          },
+          "bestelltext": {
+            "type": "string",
+            "title": "Bestelltext"
+          },
+          "current_wg_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Wg Name"
+          },
+          "suggested_wg_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Wg Name"
+          },
+          "betrag_eur": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Betrag Eur",
+            "description": "Invoice amount in EUR from the uploaded file, if an amount column was present."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "hoch",
+              "mittel",
+              "niedrig",
+              "unknown",
+              "error",
+              "not_assessable"
+            ],
+            "title": "Confidence"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "objektbez_signal": {
+            "type": "boolean",
+            "title": "Objektbez Signal",
+            "default": false
+          },
+          "ef_missing": {
+            "type": "boolean",
+            "title": "Ef Missing",
+            "default": false
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "reject",
+                  "regroup",
+                  "new_wg"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "How produced: 'baseline' | 'memory' | 'memoized'."
+          }
+        },
+        "type": "object",
+        "required": [
+          "row_index",
+          "bestelltext",
+          "confidence",
+          "reason"
+        ],
+        "title": "PredictionRow"
+      },
+      "PredictionRunResponse": {
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/PredictionStats"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "api_calls": {
+            "type": "integer",
+            "title": "Api Calls"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "title": "Cache Hits"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stats",
+          "rows",
+          "cost_usd",
+          "api_calls",
+          "cache_hits"
+        ],
+        "title": "PredictionRunResponse"
+      },
+      "PredictionStats": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "regrouped_high_med": {
+            "type": "integer",
+            "title": "Regrouped High Med"
+          },
+          "low_confidence": {
+            "type": "integer",
+            "title": "Low Confidence"
+          },
+          "no_ef": {
+            "type": "integer",
+            "title": "No Ef"
+          },
+          "confirmed": {
+            "type": "integer",
+            "title": "Confirmed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "regrouped_high_med",
+          "low_confidence",
+          "no_ef",
+          "confirmed"
+        ],
+        "title": "PredictionStats"
+      },
+      "ProposalRefineRequest": {
+        "properties": {
+          "annotations": {
+            "$ref": "#/components/schemas/FieldAnnotations"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichContent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "annotations"
+        ],
+        "title": "ProposalRefineRequest",
+        "description": "Refine a persisted proposal with per-field annotations (bulk review loop)."
+      },
+      "RunDetail": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/RunSummary"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/UploadSummary"
+          },
+          "plausibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlausibilityRunResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionRunResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionState"
+            },
+            "type": "array",
+            "title": "Decisions"
+          },
+          "change_log": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeLogRecord"
+            },
+            "type": "array",
+            "title": "Change Log"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run",
+          "upload"
+        ],
+        "title": "RunDetail",
+        "description": "Everything needed to resume a run: rebuilt from the DB (no LLM re-run)."
+      },
+      "RunOptions": {
+        "properties": {
+          "max_rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rows",
+            "description": "Cap rows for demo speed. Null = run on the full file.",
+            "default": 200
+          },
+          "enable_hints": {
+            "type": "boolean",
+            "title": "Enable Hints",
+            "description": "Inject retrieved similar confirmed cases into the prediction prompt.",
+            "default": false
+          },
+          "hint_top_n": {
+            "type": "integer",
+            "title": "Hint Top N",
+            "description": "Max retrieved cases per row.",
+            "default": 6
+          },
+          "hint_threshold": {
+            "type": "number",
+            "title": "Hint Threshold",
+            "description": "Min cosine similarity for a case to be used as a hint.",
+            "default": 0.82
+          },
+          "memo_threshold": {
+            "type": "number",
+            "title": "Memo Threshold",
+            "description": "Cosine memoization threshold (secondary). Primary memoization is an exact feature_key match; templated texts cluster high, so keep this near 1.0.",
+            "default": 0.99
+          }
+        },
+        "type": "object",
+        "title": "RunOptions"
+      },
+      "RunStatus": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "plaus_total": {
+            "type": "integer",
+            "title": "Plaus Total",
+            "default": 0
+          },
+          "plaus_done": {
+            "type": "integer",
+            "title": "Plaus Done",
+            "default": 0
+          },
+          "pred_total": {
+            "type": "integer",
+            "title": "Pred Total",
+            "default": 0
+          },
+          "pred_done": {
+            "type": "integer",
+            "title": "Pred Done",
+            "default": 0
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "RunStatus",
+        "description": "Lightweight, pollable run progress \u2014 all derived from the DB."
+      },
+      "RunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "row_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Count"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "decision_count": {
+            "type": "integer",
+            "title": "Decision Count",
+            "default": 0
+          },
+          "has_plausibility": {
+            "type": "boolean",
+            "title": "Has Plausibility",
+            "default": false
+          },
+          "has_prediction": {
+            "type": "boolean",
+            "title": "Has Prediction",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "status"
+        ],
+        "title": "RunSummary",
+        "description": "One persisted Lauf, for the history picker."
+      },
+      "TopWGEntry": {
+        "properties": {
+          "wg_name": {
+            "type": "string",
+            "title": "Wg Name"
+          },
+          "co2_before_t": {
+            "type": "number",
+            "title": "Co2 Before T"
+          },
+          "co2_after_t": {
+            "type": "number",
+            "title": "Co2 After T"
+          },
+          "delta_pct": {
+            "type": "number",
+            "title": "Delta Pct"
+          },
+          "eur_before": {
+            "type": "number",
+            "title": "Eur Before"
+          },
+          "eur_after": {
+            "type": "number",
+            "title": "Eur After"
+          },
+          "regrouped_count": {
+            "type": "integer",
+            "title": "Regrouped Count"
+          },
+          "avg_confidence": {
+            "type": "string",
+            "enum": [
+              "hoch",
+              "mittel",
+              "niedrig",
+              "unknown",
+              "error",
+              "not_assessable"
+            ],
+            "title": "Avg Confidence"
+          },
+          "ef_ok": {
+            "type": "boolean",
+            "title": "Ef Ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wg_name",
+          "co2_before_t",
+          "co2_after_t",
+          "delta_pct",
+          "eur_before",
+          "eur_after",
+          "regrouped_count",
+          "avg_confidence",
+          "ef_ok"
+        ],
+        "title": "TopWGEntry"
+      },
+      "UploadSummary": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count"
+          },
+          "column_count": {
+            "type": "integer",
+            "title": "Column Count"
+          },
+          "detected_columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Detected Columns"
+          },
+          "warengruppe_count": {
+            "type": "integer",
+            "title": "Warengruppe Count",
+            "description": "Distinct Warengruppe IDs present in the uploaded invoices."
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "row_count",
+          "column_count",
+          "detected_columns",
+          "warengruppe_count"
+        ],
+        "title": "UploadSummary"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WarengruppeRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "wg_id": {
+            "type": "string",
+            "title": "Wg Id"
+          },
+          "wg_name": {
+            "type": "string",
+            "title": "Wg Name"
+          },
+          "beschreibung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beschreibung"
+          },
+          "examples_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Enthalten"
+          },
+          "examples_nicht_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Nicht Enthalten"
+          },
+          "emissionsfaktoren": {
+            "items": {
+              "$ref": "#/components/schemas/EmissionsfaktorRow"
+            },
+            "type": "array",
+            "title": "Emissionsfaktoren"
+          },
+          "aktiv": {
+            "type": "boolean",
+            "title": "Aktiv",
+            "description": "Whether the Warengruppe is active. Inactive ones are no longer offered to the LLM as a suggestion target, but stay available for historical emission calculation and the audit trail. Toggle via the activate/deactivate endpoints, not the upsert payload.",
+            "default": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "wg_id",
+          "wg_name"
+        ],
+        "title": "WarengruppeRow",
+        "description": "A Warengruppe in the catalog, with its per-year emission factors."
+      },
+      "WarengruppeUpsertRequest": {
+        "properties": {
+          "wg_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wg Id",
+            "description": "Business key. Omit on create to generate one ('new-<uuid>')."
+          },
+          "wg_name": {
+            "type": "string",
+            "title": "Wg Name"
+          },
+          "beschreibung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beschreibung"
+          },
+          "examples_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Enthalten"
+          },
+          "examples_nicht_enthalten": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Examples Nicht Enthalten"
+          },
+          "emissionsfaktoren": {
+            "items": {
+              "$ref": "#/components/schemas/EmissionsfaktorRow"
+            },
+            "type": "array",
+            "title": "Emissionsfaktoren"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wg_name"
+        ],
+        "title": "WarengruppeUpsertRequest",
+        "description": "Create/update payload. `wg_id` is optional on create (generated)."
+      }
+    }
+  }
+}

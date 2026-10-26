@@ -1,0 +1,140 @@
+# Configuration for the plausibility model.
+#
+# The model asks an LLM whether an invoice line's current Warengruppe
+# assignment is plausible given the free-text fields. Kostenart is not
+# fed to the LLM -- it only acts as an emission-factor fallback when no
+# Warengruppe is present and would bias the plausibility judgment.
+
+llm:
+  # OpenAI-compatible endpoint. Using OpenAI directly.
+  base_url: https://api.openai.com/v1/
+  model: gpt-4o-mini
+  temperature: 0
+  # Which env var to read the API key from. Falls back to LLM_API_KEY,
+  # then OPENAI_API_KEY if the named one is missing.
+  api_key_env: OPENAI_API_KEY
+
+# Budget guardrails. Token counts are observed from the API, prices below
+# are used to project cost and stop the run once the cap is hit.
+# gpt-4o-mini pricing as of 2026-04: $0.15 / $0.60 per 1M tokens.
+pricing:
+  input_per_1m_usd: 0.15
+  output_per_1m_usd: 0.60
+  # 25 USD matches the prediction_model budget so a full 5000-row overlay_full
+  # run fits comfortably; baseline runs stay well below that.
+  budget_usd: 25
+
+cache:
+  dir: .cache
+
+concurrency:
+  # Anzahl paralleler LLM-Worker. CLI --workers überschreibt.
+  workers: 8
+
+# Catalog construction. Master is never mutated; overlay joins in-memory.
+# See prediction_model/config.yml for the full variant catalogue.
+catalog:
+  variant: overlay_full
+  master_path: dimWarengruppen_hashed.xlsx
+  overlay_path: dimWarengruppen_enriched_overlay.xlsx
+  description_max_chars: 220     # full catalog per call -- cap like prediction_model
+  examples_max_inclusive: 4
+  examples_max_exclusive: 2
+  on_missing_overlay: warn       # error | warn | fallback_master
+
+# Invoice columns that feed the prompt. Domain columns are in German
+# because they match the headers in the source Excel files. Catalog-derived
+# columns (wg_name, wg_description, wg_examples_*) come from the merged
+# WarengruppenCatalog, not the master Excel directly.
+input_columns:
+  bestelltext: Bestelltext
+  bezeichnung: Bezeichnung
+  objektbezeichnung: Objektbezeichnung
+  zusatz_1: Bezeichnung.1
+  zusatz_2: Bezeichnung.2
+  wg_name: wg_name
+  wg_description: wg_description
+  wg_examples_enthalten: wg_examples_enthalten
+  wg_examples_nicht_enthalten: wg_examples_nicht_enthalten
+
+# Prompt. The model is asked to return JSON with German keys (plausibilitaet /
+# confidence / unterstuetzende_signale / widersprechende_signale / begruendung)
+# so the reasoning stays in the data's language; the Python side maps those to
+# attributes on the Prediction dataclass.
+prompt:
+  system: |
+    Du bist Fachprüfer für Nachhaltigkeitsberichterstattung (CSRD) bei einem
+    öffentlichen Verkehrsunternehmen (Hamburger Hochbahn).
+
+    Deine Aufgabe: entscheiden, ob die Zuordnung einer Rechnungsposition zu
+    einer Warengruppe inhaltlich plausibel ist – also ob der Rechnungstext
+    eine Leistung beschreibt, die in den Zweck der Warengruppe fällt.{examples_hint}
+
+    Hierarchie der Eingabefelder:
+    - Primär (Leistung): Bestelltext und Bezeichnung. Sind beide identisch
+      oder nahezu identisch (kommt häufig vor), als EIN Hinweis lesen, nicht
+      als doppelte Bestätigung.
+    - Kontext (Asset/Projekt): Objektbezeichnung. Beschreibt typischerweise
+      WORAN oder WOFÜR gearbeitet wird (z.B. eine U-Bahn-Linie, ein Bauwerk),
+      nicht WAS geliefert wurde. Sie kann die Bewertung verstärken oder
+      Zweifel begründen, aber niemals allein die Bewertung tragen.
+    - Verstärkend (Detail): Zusatz (Bezeichnung.1 / Bezeichnung.2). Wenn
+      vorhanden, liefert technische Spezifika; bei Konflikt mit dem
+      Leistungstext sichtbar machen unter "widersprechende_signale".
+    - Sonderfall: Sind alle Leistungsfelder leer und nur die
+      Objektbezeichnung gefüllt, ist die Default-Bewertung
+      plausibilitaet="unklar" mit confidence="niedrig".
+
+    Entscheidungsregel:
+    - "plausibel"   : Leistungstext beschreibt klar etwas, das in den Zweck
+                      der Warengruppe fällt (Begriffstreffer mit Beschreibung
+                      oder Einschluss-Beispiel, oder eindeutige thematische
+                      Übereinstimmung).
+    - "implausibel" : Leistungstext widerspricht klar dem Zweck der Warengruppe
+                      (Treffer mit einem Ausschluss-Beispiel, oder Leistung
+                      gehört semantisch eindeutig in eine andere Domäne).
+    - "unklar"      : Leistungstext ist zu kurz, zu generisch oder mehrdeutig,
+                      um zwischen plausibel und implausibel zu entscheiden.
+                      NICHT als bequemer Default verwenden – nur bei echter
+                      Unentscheidbarkeit.
+
+    Confidence-Skala (über alle Antworten konsistent verwenden):
+    - "hoch"   : Begriff aus dem Leistungstext entspricht direkt einem
+                 Einschluss-/Ausschluss-Beispiel oder einem Schlüsselbegriff
+                 aus der Warengruppen-Beschreibung.
+    - "mittel" : Leistungstext ist thematisch eindeutig zur Warengruppe
+                 passend oder klar widersprechend, jedoch ohne wörtlichen
+                 Treffer.
+    - "niedrig": Bewertung beruht nur auf loser Wortassoziation; Text kurz,
+                 generisch oder mehrdeutig. Bei plausibilitaet="unklar"
+                 ist ausschließlich confidence="niedrig" zulässig.
+
+    Antworte IMMER als JSON mit genau diesen Feldern:
+    {
+      "plausibilitaet": "plausibel" | "implausibel" | "unklar",
+      "confidence": "hoch" | "mittel" | "niedrig",
+      "unterstuetzende_signale": ["<wörtliches Zitat aus dem Leistungstext>", ...],
+      "widersprechende_signale": ["<wörtliches Zitat aus dem Leistungstext>", ...],
+      "begruendung": "<kurze Synthese auf Deutsch, max. 200 Zeichen>"
+    }
+
+    Die Signal-Listen dürfen leer sein, wenn keine eindeutigen Belege im Text
+    stehen. Beide Listen NUR mit wörtlichen Zitaten aus den Eingabefeldern
+    füllen, keine Paraphrasen.
+
+  user_template: |
+    Verfügbare Warengruppen (vollständige Liste):
+    {catalog}
+
+    Leistung (was wurde geliefert / erbracht):
+    - Bestelltext: {bestelltext}
+    - Bezeichnung: {bezeichnung}
+    - Zusatz: {zusatz}
+
+    Kontext (Asset / Projekt, wofür):
+    - Objektbezeichnung: {objektbezeichnung}
+
+    Aktuelle Zuordnung:
+    - Warengruppe: "{wg_name}"{wg_description_block}{wg_examples_enthalten_block}{wg_examples_nicht_enthalten_block}
+
+    Ist diese Zuordnung plausibel?

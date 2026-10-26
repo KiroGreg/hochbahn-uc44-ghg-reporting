@@ -1,0 +1,29 @@
+# Build context for the backend image is the PROJECT ROOT (see
+# app/backend/Dockerfile `context: ..`), so this root .dockerignore keeps the
+# context small. Without it the 294MB frontend node_modules and the LLM
+# `.cache/` dirs get shipped into the build (and can exhaust builder disk).
+
+# VCS / tooling
+.git
+.gitlab-ci.yml
+
+# Python
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+
+# Node / frontend (built separately by the frontend image)
+**/node_modules
+app/frontend/dist
+app/frontend/.angular
+
+# Standalone-model LLM response cache — not needed by the backend runtime.
+**/.cache
+
+# Generated API spec
+**/openapi.json
+
+# Local artifacts
+app/backend/uc44_local.db
+**/*.env.local

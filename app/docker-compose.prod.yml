@@ -1,0 +1,25 @@
+# Production overlay for the VM deploy.
+#
+# Adds TLS to the frontend container using the host-provided cert,
+# rebinds the host ports to 80 + 443 (with 80 → 443 redirect), and
+# keeps the backend off the public network.
+#
+# Usage on the VM:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  backend:
+    # Using this overlay IS the "I'm on the VM" signal — mark the env so the
+    # app self-identifies (GET /api/health → env=vm) even if the operator
+    # forgot to set UC44_ENV in the git-ignored .env. `environment:` wins over
+    # the env_file layer, so this always takes effect under the overlay.
+    environment:
+      - UC44_ENV=vm
+
+  frontend:
+    ports: !override
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend/nginx-prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro

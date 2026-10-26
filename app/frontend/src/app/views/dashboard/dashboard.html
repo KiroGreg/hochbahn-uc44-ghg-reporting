@@ -1,0 +1,231 @@
+@if (!state.dashboard()) {
+  <div class="card">
+    <div class="card-b" style="text-align:center;padding:40px 20px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px">Noch keine Auswertung</div>
+      <div class="tsm t2" style="margin-bottom:16px">Bitte zuerst eine Excel hochladen und die KI-Prüfung durchführen — danach erscheinen hier die Kennzahlen.</div>
+      <button class="btn bp" (click)="state.go('review')">Zur KI-Prüfung →</button>
+    </div>
+  </div>
+} @else {
+@let k = kpis();
+@let f = funnel();
+
+<div class="tbar">
+  <div class="tbtns">
+    <button class="tbtn" [class.ta]="tab() === 'co2'" (click)="setTab('co2')">THG-Emissionen (CO₂e)</button>
+    <button class="tbtn" [class.ta]="tab() === 'eur'" (click)="setTab('eur')">Ausgaben (EUR)</button>
+  </div>
+  <div class="f1"></div>
+  <app-select [options]="yearOptions()" [value]="selectedYear()" (valueChange)="onYearChange($event)"></app-select>
+  <button class="btn" (click)="refresh()" [disabled]="loading()">↻ Aktualisieren</button>
+  <button class="btn bp" (click)="exportExcel()">↓ Excel exportieren</button>
+</div>
+
+@if (tab() === 'co2') {
+  <div class="kg">
+    <div class="kc"><div class="kl">CO₂e vorher <app-tip text="Scope-3-Emissionen in t CO₂e, berechnet mit den originalen Warengruppen-Zuordnungen vor jeder KI-Korrektur."></app-tip></div><div class="kv">{{ fmt(k?.co2_before_t) }} t</div><div class="ks">Scope 3 gesamt</div></div>
+    <div class="kc kgr">
+      <div class="kl">CO₂e nachher <app-tip text="Emissionen nach Regrouping und KI-Korrekturen. Die Differenz zeigt, wie stark die WG-Korrekturen das GHG-Ergebnis beeinflussen."></app-tip></div>
+      <div class="kv">{{ fmt(k?.co2_after_t) }} t</div>
+      <div class="ks" style="color:var(--green)">{{ fmt(k?.co2_delta_pct) }}% korrigiert</div>
+    </div>
+    <div class="kc krd">
+      <div class="kl">Nicht berechenbar ⚠ <app-tip text="Positionen ohne Emissionsfaktor für die zugeordnete WG. Diese fließen nicht in den GHG-Report ein – WG-EF-Abdeckung prüfen."></app-tip></div>
+      <div class="kv">{{ fmt(k?.not_calculable) }}</div>
+      <div class="ks">WG ohne Emissionsfaktor</div>
+    </div>
+    <div class="kc kbl">
+      <div class="kl">Umgruppierungsrate <app-tip text="Anteil der Einträge, bei denen Modell 2 eine neue Warengruppe vergeben hat."></app-tip></div>
+      <div class="kv">{{ fmt(k?.regroup_rate_pct) }}%</div>
+      <div class="ks">{{ fmt(f?.not_plausible) }} betroffen</div>
+    </div>
+  </div>
+} @else {
+  <div class="kg">
+    <div class="kc"><div class="kl">Gesamtausgaben <app-tip text="Summe aller Rechnungspositionen in €, unabhängig von der Warengruppe."></app-tip></div><div class="kv">{{ fmt(k?.eur_total, {maximumFractionDigits:0}) }} €</div></div>
+    <div class="kc kbl"><div class="kl">Top-WG Anteil <app-tip text="Prozentualer Anteil der ausgabenstärksten Warengruppe an den Gesamtausgaben."></app-tip></div><div class="kv">{{ fmt(k?.top_wg_share_pct) }}%</div></div>
+    <div class="kc kam"><div class="kl">Ausgaben umgruppiert <app-tip text="Gesamtbetrag (€) der Positionen, die durch Regrouping eine neue WG erhalten haben."></app-tip></div><div class="kv">{{ fmt(k?.eur_regrouped, {maximumFractionDigits:0}) }} €</div></div>
+    <div class="kc"><div class="kl">Ø EUR / Eintrag <app-tip text="Durchschnittlicher Rechnungsbetrag pro Position – hilft beim Einschätzen der Eintragsgröße."></app-tip></div><div class="kv">{{ fmt(k?.eur_avg_per_entry, {maximumFractionDigits:0}) }} €</div></div>
+  </div>
+}
+
+<!-- Balkendiagramm: Top-WG nach Gesamtemissionen/-ausgaben (req 4.2) -->
+<div class="card mb14">
+  <div class="card-h">
+    <span>Warengruppen mit den höchsten {{ tab() === 'co2' ? 'Gesamtemissionen' : 'Gesamtausgaben' }}
+      <app-tip text="Welche Warengruppen verursachen in Summe die meisten {{ tab() === 'co2' ? 'Emissionen' : 'Ausgaben' }} (Gesamtwerte nach der KI-Korrektur). Absteigend sortiert, Top 10. Zeigt, wo der größte Hebel liegt."></app-tip>
+    </span>
+    <span class="tsm t2">Gesamt · Top {{ barChart().length }}</span>
+  </div>
+  <div class="card-b">
+    @if (barChart().length) {
+      @for (d of barChart(); track d.name) {
+        <div class="bc-row">
+          <div class="bc-label" [title]="d.name">{{ d.name }}</div>
+          <div class="bc-track">
+            <div class="bc-bar" [style.width.%]="d.pct"></div>
+          </div>
+          <div class="bc-val">
+            @if (tab() === 'co2') { {{ fmt(d.value) }} t } @else { {{ fmt(d.value, {maximumFractionDigits:0}) }} € }
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="tsm t2">Keine Daten verfügbar.</div>
+    }
+  </div>
+</div>
+
+<!-- Histogramm: Emissionsintensität je WG (req 4.4) -->
+<div class="card mb14">
+  <div class="card-h">
+    <span>{{ tab() === 'co2' ? 'Ø Emissionen je Bestellung' : 'Ø Ausgaben je Bestellung' }}
+      <app-tip text="Durchschnittliche {{ tab() === 'co2' ? 'Emissionen' : 'Ausgaben' }} pro Bestellung: Gesamtwert geteilt durch die Anzahl der Bestellungen (n) in der Warengruppe. Zeigt besonders {{ tab() === 'co2' ? 'CO₂' : 'ausgaben' }}-intensive Kategorien – unabhängig davon, wie oft dort bestellt wurde. Absteigend sortiert."></app-tip>
+    </span>
+    <span class="tsm t2">{{ tab() === 'co2' ? 't CO₂e' : '€' }} / Bestellung · Top {{ histogram().length }}</span>
+  </div>
+  <div class="card-b">
+    @if (histogram().length) {
+      @for (d of histogram(); track d.name) {
+        <div class="bc-row">
+          <div class="bc-label" [title]="d.name">{{ d.name }}</div>
+          <div class="bc-track">
+            <div class="bc-bar bc-hist" [style.width.%]="d.pct"></div>
+          </div>
+          <div class="hist-rate">
+            @if (tab() === 'co2') { {{ fmt(d.rate, {maximumFractionDigits:1}) }} t } @else { {{ fmt(d.rate, {maximumFractionDigits:0}) }} € }
+          </div>
+          <div class="hist-n" title="Anzahl Bestellungen in dieser Warengruppe">n={{ d.count }}</div>
+        </div>
+      }
+    } @else {
+      <div class="tsm t2">Keine Daten verfügbar.</div>
+    }
+  </div>
+</div>
+
+<div class="tw mb14">
+  <div class="card-h">
+    <span>Detailtabelle: Warengruppen vorher/nachher
+      <app-tip text="Je Warengruppe: Werte vor und nach der KI-Korrektur, prozentuale Veränderung, Anzahl der Bestellungen, der Gesamtbetrag (€) und ob ein Emissionsfaktor (EF) hinterlegt ist."></app-tip>
+    </span>
+    <span class="tsm t2">EF-Quelle: WG-Tabelle · Fallback: Kostenart-EF</span>
+  </div>
+  <div class="tw-scroll">
+  <table style="table-layout:fixed">
+    <thead>
+      <tr>
+        <th style="width:30%">Warengruppe</th>
+        <th style="width:13%;text-align:right">vorher</th>
+        <th style="width:13%;text-align:right">nachher</th>
+        <th style="width:13%;text-align:right">Veränderung</th>
+        <th style="width:12%;text-align:right">Bestellungen</th>
+        <th style="width:12%;text-align:right">Betrag ↓</th>
+        <th style="width:7%;text-align:center">EF</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (r of detailRows(); track r.wg_name) {
+        <tr>
+          <td>{{ r.wg_name }}</td>
+          <td style="text-align:right">
+            @if (tab() === 'co2') { {{ fmt(r.co2_before_t) }} t } @else { {{ fmt(r.eur_before, {maximumFractionDigits:0}) }} € }
+          </td>
+          <td style="text-align:right">
+            @if (tab() === 'co2') { {{ fmt(r.co2_after_t) }} t } @else { {{ fmt(r.eur_after, {maximumFractionDigits:0}) }} € }
+          </td>
+          <td style="text-align:right" [style.color]="r.delta_pct < 0 ? 'var(--green)' : (r.delta_pct > 0 ? 'var(--red)' : 'var(--t2)')">
+            @if (r.delta_pct < 0) { ↓ {{ fmt(-r.delta_pct) }}% }
+            @else if (r.delta_pct > 0) { ↑ {{ fmt(r.delta_pct) }}% }
+            @else { — }
+          </td>
+          <td style="text-align:right">{{ fmt(r.regrouped_count) }}</td>
+          <td style="text-align:right">{{ fmt(r.eur_after, {maximumFractionDigits:0}) }} €</td>
+          <td style="text-align:center">
+            @if (r.ef_ok) { <span class="chip c-gr">✓</span> } @else { <span class="chip c-rd">⚠</span> }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-h">
+    <span>Umverteilung der Warengruppen (Vorher → Nachher)
+      <app-tip text="Sankey-Diagramm aller tatsächlich übernommenen Warengruppen-Änderungen zwischen Originaldatei und finalem Dashboard. Quelle links = ursprüngliche WG, Ziel rechts = finale WG nach Review. Die Bandbreite und Prozentwerte zeigen den Anteil an allen Umgruppierungen."></app-tip>
+    </span>
+    <span class="tsm t2">
+      @if (sankey(); as sk) {
+        {{ sk.unitLabel }} · {{ fmt(sk.totalChanges, { maximumFractionDigits: 0 }) }} Änderungen
+      } @else {
+        keine Flüsse
+      }
+    </span>
+  </div>
+  <div class="card-b">
+    @if (sankey(); as sk) {
+      <div class="sankey-wrap">
+        <svg
+          class="sankey-svg"
+          [attr.viewBox]="'0 0 ' + sk.width + ' ' + sk.height"
+          role="img"
+          aria-label="Sankey-Diagramm der Warengruppen-Umverteilung"
+        >
+          @for (link of sk.links; track link.source + '->' + link.target) {
+            <path
+              class="sankey-link"
+              [attr.d]="link.path"
+              [attr.stroke]="link.color"
+              [attr.stroke-width]="link.strokeWidth"
+            >
+              <title>{{ linkTooltip(link) }}</title>
+            </path>
+          }
+
+          @for (node of sk.nodes; track node.side + ':' + node.name) {
+            <rect
+              class="sankey-node"
+              [class.left]="node.side === 'left'"
+              [class.right]="node.side === 'right'"
+              [attr.x]="node.x"
+              [attr.y]="node.rectY"
+              [attr.width]="16"
+              [attr.height]="node.height"
+              rx="4"
+            >
+              <title>{{ node.name }}: {{ fmt(node.value, { maximumFractionDigits: 0 }) }} Änderungen</title>
+            </rect>
+            <foreignObject
+              class="sankey-label-box"
+              [attr.x]="nodeLabelX(node)"
+              [attr.y]="nodeLabelY(node)"
+              [attr.width]="nodeLabelWidth()"
+              [attr.height]="nodeLabelHeight(node)"
+            >
+              <div
+                xmlns="http://www.w3.org/1999/xhtml"
+                class="sankey-label-card"
+                [class.left]="node.side === 'left'"
+                [class.right]="node.side === 'right'"
+              >
+                <div class="sankey-label-name">{{ node.name }}</div>
+                <div class="sankey-label-meta">{{ nodeLabelMeta(node, sk.totalChanges) }}</div>
+              </div>
+            </foreignObject>
+          }
+        </svg>
+      </div>
+    } @else {
+      <div class="sankey-empty">
+        <div>
+          <div style="font-size:30px;line-height:1;margin-bottom:10px">🔀</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px">Keine Umgruppierungsflüsse verfügbar</div>
+          <div class="tsm t2">Das Diagramm erscheint, sobald im Review finale WG-Änderungen gegenüber der Originaldatei übernommen wurden.</div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+}

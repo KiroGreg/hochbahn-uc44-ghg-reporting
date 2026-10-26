@@ -1,0 +1,9 @@
+stages:
+  - deploy
+
+deploy-to-vm:
+  stage: deploy
+  script:
+    - cd ~/uc44-app && git pull
+  only:
+    - main

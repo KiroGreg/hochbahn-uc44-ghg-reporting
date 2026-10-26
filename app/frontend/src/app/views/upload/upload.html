@@ -1,0 +1,104 @@
+@let summary = state.upload();
+
+<input #fileInput type="file" accept=".xlsx,.xls" (change)="onFile($event)" hidden />
+
+@if (!summary && !busy()) {
+  <div class="dz-center">
+    <div class="dz" (click)="pickFile(fileInput)" (dragover)="onDragOver($event)" (drop)="onDrop($event, fileInput)">
+      <div class="dz-ico">⇧</div>
+      <div class="dz-ttl">Excel-Datei hier ablegen</div>
+      <div class="dz-sub">.xlsx · bis zu 210.000 Rechnungspositionen · max. 50 MB</div>
+      <button class="btn" (click)="$event.stopPropagation(); pickFile(fileInput)">Datei auswählen</button>
+      <div class="dz-hint">
+        oder
+        <a (click)="$event.stopPropagation(); loadSample()" style="color:var(--blue);cursor:pointer;text-decoration:underline">
+          bundled Sample (HHA 5000 rows) laden
+        </a>
+      </div>
+    </div>
+
+    @if (runs().length) {
+      <div style="width:100%;max-width:680px;margin:22px auto 0">
+        <div style="font-size:12px;font-weight:700;color:var(--t2);letter-spacing:.02em;text-transform:uppercase;margin-bottom:8px">
+          Letzte Läufe
+          <app-tip text="Frühere Analysen werden in der Datenbank gespeichert. Wähle einen Lauf, um dort weiterzumachen – inklusive deiner bereits getroffenen Entscheidungen."></app-tip>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          @for (r of runs(); track r.id) {
+            <button
+              type="button"
+              (click)="resume(r.id)"
+              [disabled]="loadingRun()"
+              style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;text-align:left;padding:10px 13px;border:1px solid var(--bd);border-radius:8px;background:var(--card);cursor:pointer;font:inherit">
+              <span class="mono" style="font-size:12px;color:var(--t2)">{{ formatRunDate(r.created_at) }}</span>
+              <span style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.filename || 'Unbenannt' }}</span>
+              <span style="font-size:12px;font-weight:600;color:var(--blue);justify-self:end">Fortsetzen →</span>
+              <span style="grid-column:2 / 4;font-size:11px;color:var(--t2)">
+                <span [style.color]="runStatusColor(r)" style="font-weight:600">{{ runStatusLabel(r) }}</span>
+                · {{ r.row_count?.toLocaleString('de-DE') }} Zeilen
+                @if (r.decision_count) { · {{ r.decision_count }} Entscheidung(en) }
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (busy() || progress() > 0) {
+  <div class="card mb14">
+    <div class="card-b">
+      <div class="fr fbt" style="margin-bottom:6px">
+        <span style="font-size:11px;font-weight:500">{{ summary?.filename || 'Datei wird geladen…' }}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--blue)">{{ progress() }}%</span>
+      </div>
+      <div class="ptrk mb12">
+        <div class="pfil" [style.background]="'var(--blue)'" [style.width.%]="progress()"></div>
+      </div>
+      <div class="tsm t2">{{ status() }}</div>
+    </div>
+  </div>
+}
+
+@if (summary) {
+  <div style="font-size:13px;font-weight:700;margin-bottom:11px;letter-spacing:-.01em">
+    Spaltenzuordnung bestätigen
+    <app-tip text="Die Spalten werden automatisch erkannt – unabhängig von ihrer Reihenfolge. Erforderlich: Bestelltext und Warengruppe. Optional: Kostenart und Betrag."></app-tip>
+  </div>
+  <div class="tw mb12">
+    <table style="table-layout:fixed">
+      <thead>
+        <tr>
+          <th style="width:30%">Erkannte Spalte</th>
+          <th style="width:14%">Index</th>
+          <th>Beispiel-Headername</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (col of summary.detected_columns; track col; let i = $index) {
+          <tr>
+            <td>{{ col }}</td>
+            <td style="color:var(--t2)">#{{ i + 1 }}</td>
+            <td style="color:var(--t2)" class="mono">{{ col }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="alert a-i mb12">
+    <span class="a-ico">ℹ</span>
+    <div>
+      Datei akzeptiert: <strong>{{ summary.row_count.toLocaleString('de-DE') }} Einträge</strong> ·
+      <strong>{{ summary.warengruppe_count }} Warengruppen</strong> ·
+      <strong>{{ summary.column_count }} Spalten</strong>.
+    </div>
+  </div>
+  <div class="fr fbt">
+    <span class="tsm t2">{{ summary.filename }}</span>
+    <button class="btn bp" (click)="goNext()">
+      KI-Analyse starten →
+      <app-tip text="Die KI prüft alle Einträge auf korrekte Kategorisierung und schlägt Korrekturen vor. Im nächsten Schritt kannst du die Ergebnisse prüfen und bestätigen."></app-tip>
+    </button>
+  </div>
+}

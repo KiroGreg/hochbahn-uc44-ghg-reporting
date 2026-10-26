@@ -1,0 +1,40 @@
+<div class="login-shell">
+  <div class="login-card card">
+    <div class="card-h">
+      <span>UC44 — THG Analyse</span>
+      <span class="badge b-bl">Login</span>
+    </div>
+    <div class="card-b">
+      <div class="tsm t2 mb12">
+        Hamburger Hochbahn · D2S2C Hamburg. Diese Demo-Instanz ist
+        zugangsbeschränkt — bitte das geteilte Zugangstoken eingeben.
+      </div>
+      <form (ngSubmit)="submit()">
+        <label class="kl">Zugangstoken</label>
+        <input
+          type="password"
+          class="tok-input"
+          [ngModel]="token()"
+          (ngModelChange)="token.set($event)"
+          name="token"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          autofocus
+        />
+
+        @if (error()) {
+          <div class="alert a-w" style="margin-top:10px;margin-bottom:0">
+            <span class="a-ico">⚠</span><div>{{ error() }}</div>
+          </div>
+        }
+
+        <div class="fr fbt" style="margin-top:14px">
+          <span class="tsm t2">Token wird lokal im Browser gespeichert.</span>
+          <button type="submit" class="btn bp" [disabled]="busy()">
+            @if (busy()) { Prüfe… } @else { Anmelden }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

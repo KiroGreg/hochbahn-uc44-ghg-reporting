@@ -1,0 +1,31 @@
+:host { display: block; height: 100vh; width: 100vw; background: var(--bg); }
+
+.login-shell {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: 380px;
+  max-width: 100%;
+}
+
+.tok-input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  background: var(--bg-inp);
+  color: var(--t1);
+  outline: none;
+  transition: var(--tr);
+  margin-top: 6px;
+  letter-spacing: 0.06em;
+}
+.tok-input:focus { border-color: var(--blue); }

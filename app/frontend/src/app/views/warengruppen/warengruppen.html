@@ -1,0 +1,431 @@
+<div class="wg-wrap">
+  <!-- Toolbar -->
+  <div class="wg-bar">
+    <div class="wg-search">
+      <input
+        type="text"
+        placeholder="Suche nach Name, ID oder Beschreibung…"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+      <label class="wg-statusfilter">
+        Status:
+        <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="alle">alle</option>
+          <option value="aktiv">nur aktive</option>
+          <option value="inaktiv">nur inaktive</option>
+        </select>
+      </label>
+      <span class="wg-count">{{ dataSource.filteredData.length }} / {{ rows().length }}</span>
+    </div>
+    <div class="wg-bar-actions">
+      <button class="wg-btn" (click)="openImport()">⭳ Importieren</button>
+      <button class="wg-btn wg-btn-primary" (click)="startCreate()">+ Neue Warengruppe</button>
+    </div>
+  </div>
+
+  <!-- Bulk-Aktionsleiste (nur bei Auswahl) -->
+  @if (selected().size) {
+    <div class="wg-bulkbar">
+      <span class="wg-bulk-count">{{ selected().size }} ausgewählt</span>
+      <button class="wg-btn wg-btn-ghost" (click)="clearSelection()">Auswahl aufheben</button>
+      <span class="wg-bulk-spacer"></span>
+      @if (pendingBulkDelete()) {
+        <span class="confirm">{{ selected().size }} Warengruppe(n) löschen?</span>
+        <button
+          class="wg-btn wg-btn-danger"
+          [disabled]="bulkDeleting()"
+          (click)="doBulkDelete()"
+        >
+          {{ bulkDeleting() ? 'Löschen…' : 'Ja, löschen' }}
+        </button>
+        <button class="wg-btn" [disabled]="bulkDeleting()" (click)="pendingBulkDelete.set(false)">
+          Abbrechen
+        </button>
+      } @else {
+        <button class="wg-btn wg-btn-danger" (click)="pendingBulkDelete.set(true)">
+          Löschen
+        </button>
+      }
+    </div>
+  }
+
+  @if (error()) {
+    <div class="wg-err">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="wg-notice">{{ notice() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="wg-empty">Lade Katalog…</div>
+  } @else if (!rows().length) {
+    <div class="wg-empty">
+      Der Katalog ist leer. Bitte zunächst über das Seed-Skript befüllen
+      (<code>scripts/seed_warengruppen.py</code>).
+    </div>
+  } @else {
+    <div class="wg-tablewrap">
+      <table mat-table [dataSource]="dataSource" matSort class="wg-table">
+        <!-- Auswahl (Checkbox) -->
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef class="c-sel">
+            <input
+              type="checkbox"
+              [checked]="allFilteredSelected()"
+              [indeterminate]="someFilteredSelected()"
+              (change)="toggleAll()"
+              title="Alle (gefilterten) auswählen"
+            />
+          </th>
+          <td mat-cell *matCellDef="let r" class="c-sel">
+            <input
+              type="checkbox"
+              [checked]="isSelected(r.wg_id)"
+              (change)="toggleRow(r.wg_id)"
+              (click)="$event.stopPropagation()"
+            />
+          </td>
+        </ng-container>
+
+        <!-- Warengruppe-ID -->
+        <ng-container matColumnDef="wg_id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="c-id">Warengruppe-ID</th>
+          <td mat-cell *matCellDef="let r" class="c-id"><code>{{ r.wg_id }}</code></td>
+        </ng-container>
+
+        <!-- Name -->
+        <ng-container matColumnDef="wg_name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="c-name">Name</th>
+          <td mat-cell *matCellDef="let r" class="c-name">{{ r.wg_name }}</td>
+        </ng-container>
+
+        <!-- Beschreibung -->
+        <ng-container matColumnDef="beschreibung">
+          <th mat-header-cell *matHeaderCellDef class="c-desc">Beschreibung</th>
+          <td mat-cell *matCellDef="let r" class="c-desc" [title]="r.beschreibung || ''">
+            {{ r.beschreibung || '—' }}
+          </td>
+        </ng-container>
+
+        <!-- Beispiele (klickbare Indikatoren) -->
+        <ng-container matColumnDef="beispiele">
+          <th mat-header-cell *matHeaderCellDef class="c-num">Beispiele</th>
+          <td mat-cell *matCellDef="let r" class="c-num">
+            <span
+              class="pill pill-in"
+              role="button"
+              tabindex="0"
+              title="Beispiele anzeigen"
+              (click)="openExamples(r, $event)"
+              >{{ (r.examples_enthalten || []).length }}</span
+            >
+            <span
+              class="pill pill-ex"
+              role="button"
+              tabindex="0"
+              title="Beispiele anzeigen"
+              (click)="openExamples(r, $event)"
+              >{{ (r.examples_nicht_enthalten || []).length }}</span
+            >
+          </td>
+        </ng-container>
+
+        <!-- Emissionsfaktor -->
+        <ng-container matColumnDef="ef">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="c-ef">Emissionsfaktor</th>
+          <td mat-cell *matCellDef="let r" class="c-ef">
+            @if (latestEf(r); as ef) {
+              <strong>{{ formatEf(ef.wert) }}</strong>
+              <span class="ef-unit">kg CO₂e/€ · {{ ef.jahr }}</span>
+            } @else {
+              <span class="ef-missing">kein EF</span>
+            }
+          </td>
+        </ng-container>
+
+        <!-- Aktionen -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="c-act"></th>
+          <td mat-cell *matCellDef="let r" class="c-act">
+            <button class="wg-btn" (click)="startEdit(r)">Bearbeiten</button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          [class.wg-row-active]="row.aktiv"
+          [class.wg-row-inactive]="!row.aktiv"
+        ></tr>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Edit / Create modal -->
+@if (editing(); as e) {
+  <div class="wg-modal-backdrop" (click)="cancel()">
+    <div class="wg-modal" (click)="$event.stopPropagation()">
+      <header class="wg-modal-head">
+        <div>
+          <h3>{{ isNew() ? 'Neue Warengruppe' : 'Warengruppe bearbeiten' }}</h3>
+          @if (!isNew()) {
+            <div class="wg-modal-idrow">
+              <code class="wg-modal-id">{{ e.wg_id }}</code>
+              <span
+                class="status-badge"
+                [class.status-on]="e.aktiv"
+                [class.status-off]="!e.aktiv"
+                >{{ e.aktiv ? 'aktiv' : 'inaktiv' }}</span
+              >
+            </div>
+          }
+        </div>
+        <button class="wg-btn wg-btn-ghost" (click)="cancel()">✕</button>
+      </header>
+
+      <div class="wg-modal-body">
+        <label class="fld">
+          <span>Name *</span>
+          <input type="text" [(ngModel)]="e.wg_name" placeholder="Warengruppenbezeichnung" />
+        </label>
+
+        <div class="fld er-trigger">
+          <button type="button" class="wg-btn wg-btn-primary" (click)="openEnrich()">
+            ✨ KI-Vorschlag — Beschreibung &amp; Beispiele
+          </button>
+          <span class="er-trigger-hint">Generieren, prüfen, übernehmen — gespeichert wird erst mit „Speichern".</span>
+        </div>
+
+        <label class="fld">
+          <span>Beschreibung</span>
+          <textarea rows="3" [(ngModel)]="e.beschreibung" placeholder="Genauere Beschreibung der Warengruppe"></textarea>
+        </label>
+
+        <div class="fld-row">
+          <label class="fld">
+            <span>Beispiele — ENTHÄLT <em>(eine Zeile pro Eintrag)</em></span>
+            <textarea rows="5" [(ngModel)]="e.examples_enthalten" placeholder="z. B. Bürostühle&#10;Schreibtische"></textarea>
+          </label>
+          <label class="fld">
+            <span>Beispiele — NICHT ENTHÄLT <em>(eine Zeile pro Eintrag)</em></span>
+            <textarea rows="5" [(ngModel)]="e.examples_nicht_enthalten" placeholder="z. B. EDV-Hardware"></textarea>
+          </label>
+        </div>
+
+        <div class="fld">
+          <span class="ef-head">
+            Emissionsfaktoren <em>(kg CO₂e pro €, je Berichtsjahr)</em>
+            <button class="wg-btn wg-btn-mini" (click)="addEf()">+ Jahr</button>
+          </span>
+          <div class="ef-grid">
+            <div class="ef-grid-head">
+              <span>Jahr</span><span>Wert</span><span></span>
+            </div>
+            @for (ef of e.emissionsfaktoren; track $index) {
+              <div class="ef-grid-row">
+                <input type="number" step="1" [(ngModel)]="ef.jahr" />
+                <input type="number" step="any" [(ngModel)]="ef.wert" />
+                <button class="wg-btn wg-btn-ghost wg-btn-mini" (click)="removeEf($index)">✕</button>
+              </div>
+            } @empty {
+              <div class="ef-empty">Kein Emissionsfaktor hinterlegt.</div>
+            }
+          </div>
+        </div>
+
+        @if (error()) {
+          <div class="wg-err">{{ error() }}</div>
+        }
+      </div>
+
+      <footer class="wg-modal-foot">
+        <div class="wg-foot-left">
+          @if (!isNew()) {
+            <button
+              class="wg-btn"
+              [disabled]="togglingActive()"
+              [title]="e.aktiv ? 'Aus dem KI-Katalog nehmen' : 'Wieder in den KI-Katalog aufnehmen'"
+              (click)="toggleActiveEditing()"
+            >
+              {{ togglingActive() ? 'Bitte warten…' : (e.aktiv ? 'Deaktivieren' : 'Aktivieren') }}
+            </button>
+            @if (pendingDelete() === e.wg_id) {
+              <span class="confirm">Löschen?</span>
+              <button class="wg-btn wg-btn-danger" (click)="doDelete(e.wg_id)">Ja</button>
+              <button class="wg-btn" (click)="pendingDelete.set(null)">Nein</button>
+            } @else {
+              <button class="wg-btn wg-btn-ghost wg-btn-del" (click)="pendingDelete.set(e.wg_id)">
+                Löschen
+              </button>
+            }
+          }
+        </div>
+        <div class="wg-foot-right">
+          <button class="wg-btn" (click)="cancel()">Abbrechen</button>
+          <button class="wg-btn wg-btn-primary" [disabled]="saving()" (click)="save()">
+            {{ saving() ? 'Speichern…' : 'Speichern' }}
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Atomares KI-Vorschlags-Overlay (über dem Edit-Modal) -->
+  @if (enrichOpen()) {
+    <div class="wg-modal-backdrop er-backdrop" (click)="closeEnrich()">
+      <div class="wg-modal er-modal" (click)="$event.stopPropagation()">
+        <header class="wg-modal-head">
+          <div><h3>✨ KI-Vorschlag — {{ e.wg_name || 'neue Warengruppe' }}</h3></div>
+          <button class="wg-btn wg-btn-ghost" (click)="closeEnrich()">✕</button>
+        </header>
+        <div class="wg-modal-body">
+          @if (enrichError()) {
+            <div class="wg-err">{{ enrichError() }}</div>
+          }
+          <app-enrich-review
+            mode="generate"
+            [wgName]="e.wg_name"
+            [wgId]="e.wg_id || null"
+            [current]="enrichCurrentContent()"
+            [suggestion]="enrichSuggestion()"
+            [historySignal]="enrichHistory()"
+            [busy]="enrichBusy()"
+            applyLabel="In Formular übernehmen"
+            (generate)="enrichGenerate($event)"
+            (refine)="enrichRefine($event)"
+            (apply)="enrichApply($event)"
+            (cancelled)="closeEnrich()"
+          ></app-enrich-review>
+        </div>
+      </div>
+    </div>
+  }
+}
+
+<!-- Import-Modal -->
+@if (importOpen()) {
+  <div class="wg-modal-backdrop" (click)="closeImport()">
+    <div class="wg-modal" (click)="$event.stopPropagation()">
+      <header class="wg-modal-head">
+        <div><h3>Warengruppen importieren</h3></div>
+        <button class="wg-btn wg-btn-ghost" (click)="closeImport()">✕</button>
+      </header>
+
+      <div class="wg-modal-body">
+        <p class="imp-intro">
+          XLSX- oder CSV-Datei hochladen. Vorhandene Warengruppen werden anhand der
+          <code>wg_id</code> aktualisiert, neue angelegt — es wird nichts gelöscht.
+        </p>
+
+        <div class="imp-tpl">
+          <span>Vorlage herunterladen:</span>
+          <button class="wg-btn wg-btn-mini" (click)="downloadTemplate('xlsx')">XLSX</button>
+          <button class="wg-btn wg-btn-mini" (click)="downloadTemplate('csv')">CSV</button>
+        </div>
+
+        <details class="imp-cols">
+          <summary>Erwartete Spalten <em>(Reihenfolge beliebig)</em></summary>
+          <ul>
+            <li>
+              <code>wg_id</code> — optional. Leer ⇒ neue ID wird erzeugt; angegeben ⇒
+              Update bzw. Neuanlage mit genau dieser ID.
+            </li>
+            <li><code>wg_name</code> — <strong>Pflichtfeld</strong>.</li>
+            <li><code>beschreibung</code> — optional.</li>
+            <li>
+              <code>beispiele_enthalten</code> / <code>beispiele_nicht_enthalten</code> —
+              mehrere Einträge mit <code>|</code> trennen, z. B. <code>A | B | C</code>.
+            </li>
+            <li><code>e_2024</code>, <code>e_2025</code>, … — je Jahr eine Spalte mit dem Emissionsfaktor (Präfix <code>e_</code>).</li>
+          </ul>
+        </details>
+
+        <label class="imp-drop" [class.imp-drop-busy]="importing()">
+          <input
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            (change)="onImportFile($event)"
+            [disabled]="importing()"
+            hidden
+          />
+          <span class="imp-drop-in">
+            @if (importing()) {
+              Import läuft…
+            } @else {
+              Datei auswählen (.xlsx / .csv)
+            }
+          </span>
+        </label>
+
+        @if (importError()) {
+          <div class="wg-err">{{ importError() }}</div>
+        }
+
+        @if (importResult(); as res) {
+          <div class="imp-result">
+            <div class="imp-summary">
+              <span class="imp-badge imp-ok">{{ res.created }} neu</span>
+              <span class="imp-badge imp-up">{{ res.updated }} aktualisiert</span>
+              @if (res.skipped) {
+                <span class="imp-badge imp-skip">{{ res.skipped }} übersprungen</span>
+              }
+            </div>
+            @if (res.errors?.length) {
+              <ul class="imp-errs">
+                @for (e of res.errors; track $index) {
+                  <li>{{ e }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="wg-modal-foot">
+        <div class="wg-foot-left"></div>
+        <div class="wg-foot-right">
+          <button class="wg-btn" (click)="closeImport()">Schließen</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Beispiel-Popover (Klick auf die Indikatoren) -->
+@if (examplesPopover(); as p) {
+  <div class="wg-pop-backdrop" (click)="closeExamples()"></div>
+  <div
+    class="wg-pop"
+    [style.top.px]="p.top"
+    [style.left.px]="p.left"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="wg-pop-sec">
+      <div class="wg-pop-head wg-pop-in">ENTHÄLT</div>
+      @if ((p.row.examples_enthalten || []).length) {
+        <ul>
+          @for (x of p.row.examples_enthalten; track $index) {
+            <li>{{ x }}</li>
+          }
+        </ul>
+      } @else {
+        <div class="wg-pop-empty">keine</div>
+      }
+    </div>
+    <div class="wg-pop-sec">
+      <div class="wg-pop-head wg-pop-ex">NICHT ENTHÄLT</div>
+      @if ((p.row.examples_nicht_enthalten || []).length) {
+        <ul>
+          @for (x of p.row.examples_nicht_enthalten; track $index) {
+            <li>{{ x }}</li>
+          }
+        </ul>
+      } @else {
+        <div class="wg-pop-empty">keine</div>
+      }
+    </div>
+  </div>
+}

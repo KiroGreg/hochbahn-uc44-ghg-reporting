@@ -1,0 +1,261 @@
+:host { display: block; }
+
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-side);
+  transition: var(--tr);
+}
+
+/* ── Sidebar (Hochbahn Aubergine #470F34 / 30%) ─────────────────────── */
+#sb {
+  width: var(--sw);
+  min-width: var(--sw);
+  background: var(--bg-side);
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  transition: var(--tr);
+  z-index: 10;
+}
+.sbh {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+/* Hochbahn-Logo — Vollfarbe auf hellem Plättchen für Lesbarkeit auf Aubergine */
+.sbh-logo {
+  display: block;
+  width: 85px;
+  height: auto;
+  background: #fff;
+  padding: 5px 8px;
+  border-radius: 6px;
+  margin: 0 0 10px 0; /* linke Kante des Plättchens bündig mit Titel "THG Analyse" */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.sbh-ttl {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.brow { display: flex; gap: 4px; flex-wrap: wrap; }
+.brow .badge { font-size: 11px; padding: 3px 7px; }
+
+/* Steps in sidebar — white text on Aubergine */
+.steps { padding: 10px 0; }
+/* Katalog-Eintrag steht ganz oben — Trenner sitzt darunter, vor dem Stepper */
+.navx {
+  margin-bottom: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  margin: 1px 7px;
+  transition: background 0.15s;
+}
+.step:hover { background: rgba(255, 255, 255, 0.1); }
+.step:focus-visible { outline: 2px solid rgba(255,255,255,0.6); outline-offset: 2px; }
+/* Aktiver Schritt — roter Akzentbalken links + heller Hintergrund */
+.step.step-act {
+  background: rgba(226, 1, 31, 0.18);
+  border-left: 3px solid var(--hb-rot);
+  margin-left: 4px;
+  padding-left: 9px;
+}
+.sdot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1.5px solid transparent;
+  transition: var(--tr);
+}
+.sd-done { background: var(--green); color: #fff; border-color: var(--green); }
+.sd-act { background: var(--hb-rot); color: #fff; border-color: var(--hb-rot); } /* Hochbahn Rot */
+.sd-pen { background: transparent; color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.25); }
+.sl-m { font-size: 14px; font-weight: 600; color: #fff; line-height: 1.3; }
+.sl-s { font-size: 12px; color: rgba(255,255,255,0.72); margin-top: 2px; }
+
+/* Funnel widget — semi-transparent on Aubergine */
+.sfun {
+  margin: 6px 8px;
+  padding: 10px 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+.ftit {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+.frow { margin-bottom: 5px; }
+.fnum { font-size: 14px; font-weight: 600; margin-bottom: 2px; color: #fff; }
+.fbar { height: 2px; border-radius: 2px; margin-top: 2px; }
+
+/* Budget widget — amber-tinted on Aubergine */
+.sbudg {
+  margin: 5px 8px;
+  padding: 10px 11px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+}
+.btit {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(251, 191, 36, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+.brow2 {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.btrk {
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+.bfill { height: 100%; background: var(--amber); border-radius: 2px; }
+.sfoot {
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.7;
+}
+
+/* ── Main content area ───────────────────────────────────────────────── */
+#mn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-side);
+  padding-right: 35px;
+  padding-bottom: 8px;
+  transition: var(--tr);
+}
+
+/* ── Aubergine Top-Leiste (globale Aktionen, rechtsbündig) ───────────── */
+#tbar {
+  height: 45px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 4px;
+}
+#tbar .t-meta { color: rgba(255, 255, 255, 0.7); }
+#tbar #s-badge {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.tbar-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: var(--tr);
+}
+.tbar-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.tbar-btn:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 2px; }
+#tb {
+  height: var(--th);
+  min-height: var(--th);
+  background: var(--bg-top);
+  border-bottom: 1px solid var(--hb-rot); /* Red accent line under header */
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 12px;
+  box-shadow: var(--sh);
+  z-index: 5;
+  flex-shrink: 0;
+  transition: var(--tr);
+}
+
+/* Weißes Inhaltspanel: rundet alle 4 Ecken und clippt — damit der Scrollbar
+   (im inneren #va) nicht in die abgerundeten Ecken hineinläuft. */
+.panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+}
+#tb-ttl {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  flex: 1;
+  letter-spacing: -0.02em;
+}
+.t-meta { font-size: 10px; color: var(--t2); }
+#s-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--bg-info);
+  color: var(--ti);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+#va {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 20px;
+  background: var(--bg);
+  transition: var(--tr);
+}
+.view { display: block; animation: fi 0.2s ease; }
+@keyframes fi {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Mobile baseline (readable on narrow screens) ────────────────────── */
+@media (max-width: 768px) {
+  #sb { width: 180px; min-width: 180px; }
+  #va { padding: 12px 14px; }
+  .kg { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g2 { grid-template-columns: 1fr; }
+}
